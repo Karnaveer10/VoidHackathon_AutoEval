@@ -1,10 +1,10 @@
 const mongoose = require('mongoose')
 const studentSchema = new mongoose.Schema(
-    {
+    {   
+        name:{type:String,required:true},
         regno:{type:String,required:true,unique:true},
         email:{type:String,required:true,unique:true},
         password:{type:String,required:true},
-        reqData:{type:Object,default:{}},
         role:{type:String,default:'student',immutable:true}
     },{minimize:false}
 )

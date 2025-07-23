@@ -1,7 +1,7 @@
 const mongoose = require('mongoose')
-const profSchema = new mongoose.Schema(
+const extSchema = new mongoose.Schema(
     {
-        extid:{
+        id:{
             type:String, required:true
         },
         password:{

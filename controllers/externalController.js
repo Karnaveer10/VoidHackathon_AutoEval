@@ -1,4 +1,4 @@
-const userModel = require('../models/studentModel')
+const userModel = require('../models/extModel')
 const jwt = require('jsonwebtoken')
 const bcrypt = require('bcryptjs')
 const validator = require('validator')
@@ -7,10 +7,10 @@ const createToken = (id)=>{
 }
 
 const loginUser = async(req,res)=>{
-    const {regno,password} = req.body;
+    const {id,password} = req.body;
 
     try {
-        const user = await userModel.findOne({regno})
+        const user = await userModel.findOne({id})
         if(!user)
             return res.status(400).json({"message":"Invalid Email or Password"})
         const isMatch = await bcrypt.compare(password,user.password)
