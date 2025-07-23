@@ -10,11 +10,8 @@ const profSchema = new mongoose.Schema(
         email:{
             type:String, required:true
         },
-        classroom:{
+        password:{
             type:String, required:true
-        },
-        seats:{
-            type:Number, required:true
         },
         role:{
             type:String, default:'faculty',immutable:true

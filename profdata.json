@@ -1,0 +1,16 @@
+[
+    {
+        "name": "Valarmathi Sudhakar",
+        "id": "001",
+        "email":"valarmathisudhakar@vitprof.ac.in",
+        "password":"$2b$10$niDNNbZ0M9UhLvyLcrUjYec6JWmYutCHKRCroarTl.Jg6efMeOdVC",
+        "role": "faculty"
+    },
+    {
+        "name": "Ravi Kumar",
+        "id": "002",
+        "email":"ravikumar@vitprof.ac.in",
+        "password":"$2b$10$niDNNbZ0M9UhLvyLcrUjYec6JWmYutCHKRCroarTl.Jg6efMeOdVC",
+        "role": "faculty"
+    }
+]

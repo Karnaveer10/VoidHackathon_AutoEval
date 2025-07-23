@@ -16,6 +16,7 @@ require('dotenv').config()
 connectDB()
 
 app.use('/api/student',require('./routes/studentloginRouter'))
+app.use('/api/prof',require('./Routes/profloginRouter'))
 
 app.get("/",(req,res)=>{
     res.send("API Working")
