@@ -1,9 +1,23 @@
 [
     {
+        "name":"Thasshien",
         "regno": "24BDS1051",
         "email": "thasshien.gr2024@vitstudent.ac.in",
         "password": "$2b$10$ddZqSQd9zaKsXBI/cWgpRe.JOoaCPHHqsEriD9sKkT3wGMagrGcUO",
-        "reqData": {},
+        "role": "student"
+    },
+     {
+        "name":"Karnaveer Singh",
+        "regno": "24BDS1092",
+        "email": "karnaveer.singh2024@vitstudent.ac.in",
+        "password": "$2b$10$ddZqSQd9zaKsXBI/cWgpRe.JOoaCPHHqsEriD9sKkT3wGMagrGcUO",
+        "role": "student"
+    },
+     {
+        "name":"Barath T",
+        "regno": "24BDS1178",
+        "email": "barath.t2024@vitstudent.ac.in",
+        "password": "$2b$10$ddZqSQd9zaKsXBI/cWgpRe.JOoaCPHHqsEriD9sKkT3wGMagrGcUO",
         "role": "student"
     }
 ]
