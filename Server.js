@@ -9,7 +9,7 @@ const path = require('path');
 const cookieParser = require('cookie-parser');
 const mongoose = require('mongoose')
 const connectDB = require('./config/dbConn')
-const master = require('./models/master')
+const master = require('./models/guideModel')
 const port = process.env.PORT || 3000;
 
 connectDB()
@@ -17,6 +17,7 @@ connectDB()
 app.use('/api/student',require('./Routes/studentRouter'))
 app.use('/api/prof',require('./Routes/profRouter'))
 app.use('/api/external',require('./Routes/externalRouter'))
+app.use('/api/register',require('./Routes/registerRouter'))
 
 app.get("/", (req, res) => {
   res.send("API Working")

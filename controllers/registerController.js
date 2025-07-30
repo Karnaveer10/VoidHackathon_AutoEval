@@ -1,12 +1,10 @@
-const userModel = require('../models/studentModel')
-const jwt = require('jsonwebtoken')
-const bcrypt = require('bcryptjs')
+const userModel = require('../models/guideModel')
 const validator = require('validator')
 const createToken = (id)=>{
     return jwt.sign( {id}, process.env.JWT_TOKEN_SECRET)
 }
 
-const loginUser = async(req,res)=>{
+const individual = async(req,res)=>{
     const {regno,password} = req.body;  
 
     try {
@@ -24,7 +22,7 @@ const loginUser = async(req,res)=>{
     }
 }
 
-const getInfo = async(req,res)=>{
+const team = async(req,res)=>{
 
     try{
         const {token} = req.body
@@ -49,4 +47,4 @@ const getInfo = async(req,res)=>{
     }
 }
 
-module.exports = {loginUser,getInfo};
+module.exports = {individual,team};
