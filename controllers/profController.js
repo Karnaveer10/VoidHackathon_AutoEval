@@ -17,7 +17,7 @@ const loginUser = async(req,res)=>{
         if(!isMatch)
             return res.status(400).json({"message":"Invalid Email or Password"})
         const token = createToken(user._id)
-        res.status(200).json({token})
+        res.status(200).json({ token, name: user.name });
     } catch (error) {
         console.log(error)
         res.status(500).json({"message":"Internal Server Error"}) 

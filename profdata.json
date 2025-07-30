@@ -12,5 +12,40 @@
         "email":"ravikumar@vitprof.ac.in",
         "password":"$2b$10$niDNNbZ0M9UhLvyLcrUjYec6JWmYutCHKRCroarTl.Jg6efMeOdVC",
         "role": "faculty"
+    },
+     {
+        "name": "Anita Deshmukh",
+        "id": "003",
+        "email": "anitadeshmukh@vitprof.ac.in",
+        "password": "$2b$10$niDNNbZ0M9UhLvyLcrUjYec6JWmYutCHKRCroarTl.Jg6efMeOdVC",
+        "role": "faculty"
+    },
+    {
+        "name": "Suresh Nair",
+        "id": "004",
+        "email": "sureshnair@vitprof.ac.in",
+        "password": "$2b$10$niDNNbZ0M9UhLvyLcrUjYec6JWmYutCHKRCroarTl.Jg6efMeOdVC",
+        "role": "faculty"
+    },
+    {
+        "name": "Meena Iyer",
+        "id": "005",
+        "email": "meenaiyer@vitprof.ac.in",
+        "password": "$2b$10$niDNNbZ0M9UhLvyLcrUjYec6JWmYutCHKRCroarTl.Jg6efMeOdVC",
+        "role": "faculty"
+    },
+    {
+        "name": "Arvind Sharma",
+        "id": "006",
+        "email": "arvindsharma@vitprof.ac.in",
+        "password": "$2b$10$niDNNbZ0M9UhLvyLcrUjYec6JWmYutCHKRCroarTl.Jg6efMeOdVC",
+        "role": "faculty"
+    },
+    {
+        "name": "Priya Menon",
+        "id": "007",
+        "email": "priyamenon@vitprof.ac.in",
+        "password": "$2b$10$niDNNbZ0M9UhLvyLcrUjYec6JWmYutCHKRCroarTl.Jg6efMeOdVC",
+        "role": "faculty"
     }
 ]
