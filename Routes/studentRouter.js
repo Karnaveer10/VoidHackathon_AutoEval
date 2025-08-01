@@ -3,6 +3,6 @@ const userRouter = express.Router()
 const {loginUser,getInfo} = require('../controllers/studentController')
 
 userRouter.post('/login',loginUser)
-userRouter.post('/info',getInfo)
+userRouter.get('/info',getInfo)
 
 module.exports = userRouter

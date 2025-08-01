@@ -1,6 +1,6 @@
 const mongoose = require('mongoose');
 
-const masterSchema = new mongoose.Schema({
+const guideSchema = new mongoose.Schema({
   pid: {
     type: String, // or String
     required: true,
@@ -40,4 +40,4 @@ const masterSchema = new mongoose.Schema({
   ]
 });
 
-module.exports = mongoose.model('Master', masterSchema);
+module.exports = mongoose.model('guide', guideSchema);

@@ -1,4 +1,5 @@
-const userModel = require('../models/profModel')
+const profModel = require('../models/profModel')
+const guideModel = require('../models/guideModel')
 const jwt = require('jsonwebtoken')
 const bcrypt = require('bcryptjs')
 const validator = require('validator')
@@ -10,7 +11,7 @@ const loginUser = async(req,res)=>{
     const {id,password} = req.body;
 
     try {
-        const user = await userModel.findOne({id})
+        const user = await profModel.findOne({id})
         if(!user)
             return res.status(400).json({"message":"Invalid Email or Password"})
         const isMatch = await bcrypt.compare(password,user.password)
@@ -24,4 +25,14 @@ const loginUser = async(req,res)=>{
     }
 }
 
-module.exports = {loginUser};
+const getinfo = async (req, res) => {
+    try {
+        const guides = await guideModel.find();
+        res.status(200).json(guides);
+    } catch (error) {
+        console.log(error);
+        res.status(500).json({ "message": "Internal Server Error" });
+    }
+}
+
+module.exports = { loginUser, getinfo };   
