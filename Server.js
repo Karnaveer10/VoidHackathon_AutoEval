@@ -51,6 +51,7 @@ fs.readFile(profDataPath, 'utf8', async (err, data) => {
 app.use('/api/student', require('./Routes/studentRouter'))
 app.use('/api/prof', require('./Routes/profRouter'))
 app.use('/api/external', require('./Routes/externalRouter'))
+app.use('/api/register', require('./Routes/registerRouter'))
 
 app.get("/", (req, res) => {
   res.send("API Working")
@@ -103,64 +104,9 @@ app.put('/rejectRequest', async (req, res) => {
   }
 });
 
-app.get('/getprofdata', async (req, res) => {
-  try {
-    // Fetch all professors
-    const allProfs = await profs.find({});
 
-    // Create result array
-    const enrichedProfs = await Promise.all(
-      allProfs.map(async (prof) => {
-        // Try to find a matching master document with same pid and name
-        const masterDoc = await master.findOne({
-          pid: prof.id,
-          name: prof.name
-        });
 
-        // Log match status
-        console.log(`Checking prof: ${prof.name} (ID: ${prof.id})`);
-        if (masterDoc) {
-          console.log("✅ Matching masterDoc found:", masterDoc);
-        } else {
-          console.log("❌ No matching masterDoc found.");
-        }
-
-        // Add noOfSeats to prof (from master or default 3)
-        return {
-          ...prof.toObject(),
-          noOfSeats: masterDoc?.noOfSeats ?? 3
-        };
-      })
-    );
-
-    res.json(enrichedProfs);
-  } catch (error) {
-    console.error("Error fetching prof data:", error);
-    res.status(500).send("Server error");
-  }
-});
-
-app.get('/getmasterdata', async (req, res) => {
-  try {
-    const name = req.query.profName;
-    if (!name) {
-      return res.status(400).json({ error: "Missing 'profName' query parameter" });
-    }
-
-    const data = await master.findOne({ name });
-
-    if (!data) {
-      return res.status(404).json({ error: "No professor found with that name" });
-    }
-
-    res.json(data);
-  } catch (error) {
-    console.error("Error fetching prof data:", error);
-    res.status(500).send("Server error");
-  }
-});
-
-app.put('/request-professor', async (req, res) => {
+/*app.put('/request-professor', async (req, res) => {
   const { regNo, pid, name } = req.body;
 
   if (!regNo || !pid || !name) {
@@ -212,7 +158,7 @@ app.put('/request-professor', async (req, res) => {
     console.error("Error updating professor:", err);
     res.status(500).json({ message: "Server error" });
   }
-});
+});*/
 
 app.put('/acceptRequest', async (req, res) => {
   const { regNo, name } = req.body;

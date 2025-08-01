@@ -1,6 +1,6 @@
 const mongoose = require('mongoose');
 
-const guideschema = new mongoose.Schema({
+const guideSchema = new mongoose.Schema({
   pid: {
     type: String, // or String
     required: true,
@@ -40,4 +40,4 @@ const guideschema = new mongoose.Schema({
   ]
 });
 
-module.exports = mongoose.model('Guide', guideschema);
+module.exports = mongoose.model('guide', guideSchema);
