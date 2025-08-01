@@ -14,7 +14,40 @@ const port = process.env.PORT || 3000;
 const profs = require('./models/profModel')
 
 connectDB()
+const fs = require('fs');
+const profDataPath = path.join(__dirname, 'profData.json');
+fs.readFile(profDataPath, 'utf8', async (err, data) => {
+  if (err) {
+    console.error("Error reading profData.json:", err);
+    return;
+  }
 
+  try {
+    const profArray = JSON.parse(data);
+
+    for (const prof of profArray) {
+      const exists = await master.findOne({ pid: prof.id });
+
+      if (!exists) {
+        const newDoc = new master({
+          pid: prof.id,
+          name: prof.name,
+          cabinNo: `CAB-${prof.id}`,
+          noOfSeats: 3,
+          requests: [],
+          acceptedTeams: []
+        });
+
+        await newDoc.save();
+        console.log(`✅ Inserted ${prof.name}`);
+      } else {
+        console.log(`⏭️ Skipped (already exists): ${prof.name}`);
+      }
+    }
+  } catch (e) {
+    console.error("Error parsing/inserting profData:", e.message);
+  }
+});
 app.use('/api/student', require('./Routes/studentRouter'))
 app.use('/api/prof', require('./Routes/profRouter'))
 app.use('/api/external', require('./Routes/externalRouter'))
@@ -84,10 +117,18 @@ app.get('/getprofdata', async (req, res) => {
           name: prof.name
         });
 
+        // Log match status
+        console.log(`Checking prof: ${prof.name} (ID: ${prof.id})`);
+        if (masterDoc) {
+          console.log("✅ Matching masterDoc found:", masterDoc);
+        } else {
+          console.log("❌ No matching masterDoc found.");
+        }
+
         // Add noOfSeats to prof (from master or default 3)
         return {
           ...prof.toObject(),
-          noOfSeats: masterDoc?.noOfSeats || 3
+          noOfSeats: masterDoc?.noOfSeats ?? 3
         };
       })
     );
@@ -98,6 +139,7 @@ app.get('/getprofdata', async (req, res) => {
     res.status(500).send("Server error");
   }
 });
+
 app.get('/getmasterdata', async (req, res) => {
   try {
     const name = req.query.profName;

@@ -1,6 +1,6 @@
 const mongoose = require('mongoose');
 
-const masterSchema = new mongoose.Schema({
+const guideschema = new mongoose.Schema({
   pid: {
     type: String, // or String
     required: true,
@@ -8,7 +8,7 @@ const masterSchema = new mongoose.Schema({
     default:""
   },
   name: { type: String }, // Professor name (optional)
-
+  cabinNo: { type: String, required: true, default: '' },
   noOfSeats: { type: Number, required: true ,default: 3},
 
   requests: [
@@ -40,4 +40,4 @@ const masterSchema = new mongoose.Schema({
   ]
 });
 
-module.exports = mongoose.model('Master', masterSchema);
+module.exports = mongoose.model('Guide', guideschema);
