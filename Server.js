@@ -14,40 +14,7 @@ const port = process.env.PORT || 3000;
 const profs = require('./models/profModel')
 
 connectDB()
-const fs = require('fs');
-const profDataPath = path.join(__dirname, 'profData.json');
-fs.readFile(profDataPath, 'utf8', async (err, data) => {
-  if (err) {
-    console.error("Error reading profData.json:", err);
-    return;
-  }
 
-  try {
-    const profArray = JSON.parse(data);
-
-    for (const prof of profArray) {
-      const exists = await master.findOne({ pid: prof.id });
-
-      if (!exists) {
-        const newDoc = new master({
-          pid: prof.id,
-          name: prof.name,
-          cabinNo: `CAB-${prof.id}`,
-          noOfSeats: 3,
-          requests: [],
-          acceptedTeams: []
-        });
-
-        await newDoc.save();
-        console.log(`✅ Inserted ${prof.name}`);
-      } else {
-        console.log(`⏭️ Skipped (already exists): ${prof.name}`);
-      }
-    }
-  } catch (e) {
-    console.error("Error parsing/inserting profData:", e.message);
-  }
-});
 app.use('/api/student', require('./Routes/studentRouter'))
 app.use('/api/prof', require('./Routes/profRouter'))
 app.use('/api/external', require('./Routes/externalRouter'))
@@ -56,26 +23,8 @@ app.use('/api/register', require('./Routes/registerRouter'))
 app.get("/", (req, res) => {
   res.send("API Working")
 })
-app.post('/teamregistration', async (req, res) => {
-  try {
-    const { pid, members } = req.body;
 
-    console.log("Creating new master document with:", req.body);
-
-    const newMaster = new master({
-      pid,
-      requests: [{ members }] // wrap members inside a request
-    });
-
-    await newMaster.save();
-
-    res.status(201).json({ message: "New Master document created", data: newMaster });
-  } catch (err) {
-    console.error("Error in /teamregistration:", err);
-    res.status(500).json({ message: "Failed to create document", error: err.message });
-  }
-});
-app.put('/rejectRequest', async (req, res) => {
+/*app.put('/rejectRequest', async (req, res) => {
   const { regNo, name } = req.body;
 
   try {
@@ -104,61 +53,6 @@ app.put('/rejectRequest', async (req, res) => {
   }
 });
 
-
-
-/*app.put('/request-professor', async (req, res) => {
-  const { regNo, pid, name } = req.body;
-
-  if (!regNo || !pid || !name) {
-    return res.status(400).json({ message: "Missing required fields" });
-  }
-
-  try {
-    // 1. Check if the professor already has a document
-    const existingProfDoc = await master.findOne({ pid });
-
-    if (!existingProfDoc) {
-      // CASE 1: Professor doesn't exist, update student's doc
-      const updated = await master.findOneAndUpdate(
-        { 'requests.members.regNo': regNo },
-        { $set: { pid, name } },
-        { new: true }
-      );
-
-      if (!updated) {
-        return res.status(404).json({ message: "No document found with that student regNo" });
-      }
-
-      return res.json({ message: "Professor assigned successfully", updated });
-    } else {
-      // CASE 2: Professor already has a doc — merge
-
-      // Find the student's current master doc
-      const studentDoc = await master.findOne({ 'requests.members.regNo': regNo });
-
-      if (!studentDoc) {
-        return res.status(404).json({ message: "Student document not found" });
-      }
-
-      // Transfer all requests to the professor's doc
-      existingProfDoc.requests.push(...studentDoc.requests);
-
-      // Save the updated professor doc
-      await existingProfDoc.save();
-
-      // Delete the old student doc
-      await master.deleteOne({ _id: studentDoc._id });
-
-      return res.json({
-        message: "Student requests transferred to existing professor",
-        updated: existingProfDoc
-      });
-    }
-  } catch (err) {
-    console.error("Error updating professor:", err);
-    res.status(500).json({ message: "Server error" });
-  }
-});*/
 
 app.put('/acceptRequest', async (req, res) => {
   const { regNo, name } = req.body;
@@ -209,7 +103,7 @@ app.put('/acceptRequest', async (req, res) => {
     console.error("acceptRequest error:", error);
     res.status(500).json({ message: "Internal server error." });
   }
-});
+});*/
 
 
 app.listen(port, () => {
