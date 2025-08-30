@@ -16,6 +16,7 @@ const Panel = require('./models/panelModel')
 console.log("Panel:", Panel);
 
 connectDB()
+
 app.use('/api/student', require('./Routes/studentRouter'))
 app.use('/api/prof', require('./Routes/profRouter'))
 app.use('/api/external', require('./Routes/externalRouter'))
@@ -113,46 +114,46 @@ app.get('/admin_get_profdata', async (req, res) => {
 })
 
 
-app.get('/getprofdata', async (req, res) => {
-  try {
-    const { profName } = req.query;
+// app.get('/getprofdata', async (req, res) => {
+//   try {
+//     const { profName } = req.query;
 
-    if (!profName) {
-      return res.status(400).json({ error: 'Missing profName in query' });
-    }
+//     if (!profName) {
+//       return res.status(400).json({ error: 'Missing profName in query' });
+//     }
 
-    const professor = await guide.findOne({ name: profName });
+//     const professor = await guide.findOne({ name: profName });
 
-    if (!professor) {
-      return res.status(404).json({ error: 'Professor not found', requests: [] });
-    }
+//     if (!professor) {
+//       return res.status(404).json({ error: 'Professor not found', requests: [] });
+//     }
 
-    return res.status(200).json({ requests: professor.requests });
-  } catch (error) {
-    console.error('Error fetching professor data:', error);
-    return res.status(500).json({ error: 'Internal server error' });
-  }
-});
-app.post('/teamregistration', async (req, res) => {
-  try {
-    const { pid, members } = req.body;
+//     return res.status(200).json({ requests: professor.requests });
+//   } catch (error) {
+//     console.error('Error fetching professor data:', error);
+//     return res.status(500).json({ error: 'Internal server error' });
+//   }
+// });
+// app.post('/teamregistration', async (req, res) => {
+//   try {
+//     const { pid, members } = req.body;
 
-    console.log("Creating new master document with:", req.body);
+//     console.log("Creating new master document with:", req.body);
 
-    const newMaster = new master({
-      pid,
-      requests: [{ members }] // wrap members inside a request
-    });
+//     const newMaster = new master({
+//       pid,
+//       requests: [{ members }] // wrap members inside a request
+//     });
 
-    await newMaster.save();
+//     await newMaster.save();
 
-    res.status(201).json({ message: "New Master document created", data: newMaster });
-  } catch (err) {
-    console.error("Error in /teamregistration:", err);
-    res.status(500).json({ message: "Failed to create document", error: err.message });
-  }
-});
-app.put('/rejectRequest', async (req, res) => {
+//     res.status(201).json({ message: "New Master document created", data: newMaster });
+//   } catch (err) {
+//     console.error("Error in /teamregistration:", err);
+//     res.status(500).json({ message: "Failed to create document", error: err.message });
+//   }
+// });
+/*app.put('/rejectRequest', async (req, res) => {
   const { regNo, name } = req.body;
 
   try {
@@ -180,7 +181,6 @@ app.put('/rejectRequest', async (req, res) => {
     res.status(500).json({ message: "Internal server error" });
   }
 });
-
 
 
 /*app.put('/request-professor', async (req, res) => {
@@ -237,56 +237,57 @@ app.put('/rejectRequest', async (req, res) => {
   }
 });*/
 
-app.put('/acceptRequest', async (req, res) => {
-  const { regNo, name } = req.body;
 
-  if (!regNo || !name) {
-    return res.status(400).json({ message: "regNo and name are required." });
-  }
+// app.put('/acceptRequest', async (req, res) => {
+//   const { regNo, name } = req.body;
 
-  try {
-    // Find professor document by name
-    const professor = await master.findOne({ name });
-    if (!professor) {
-      return res.status(404).json({ message: "Professor not found." });
-    }
+//   if (!regNo || !name) {
+//     return res.status(400).json({ message: "regNo and name are required." });
+//   }
 
-    // Find the request containing the given regNo
-    const requestToAccept = professor.requests.find(req =>
-      req.members.some(member => member.regNo === regNo)
-    );
+//   try {
+//     // Find professor document by name
+//     const professor = await master.findOne({ name });
+//     if (!professor) {
+//       return res.status(404).json({ message: "Professor not found." });
+//     }
 
-    if (!requestToAccept) {
-      return res.status(404).json({ message: "No matching request found." });
-    }
+//     // Find the request containing the given regNo
+//     const requestToAccept = professor.requests.find(req =>
+//       req.members.some(member => member.regNo === regNo)
+//     );
 
-    const teamSize = requestToAccept.members.length;
+//     if (!requestToAccept) {
+//       return res.status(404).json({ message: "No matching request found." });
+//     }
 
-    if (professor.noOfSeats < teamSize) {
-      return res.status(400).json({ message: "Not enough seats available." });
-    }
+//     const teamSize = requestToAccept.members.length;
 
-    // Accept team: clear requests, add to acceptedTeams, update seats
-    professor.requests = [];
-    professor.acceptedTeams.push({
-      members: requestToAccept.members,
-      acceptedAt: new Date()
-    });
-    professor.noOfSeats -= teamSize;
+//     if (professor.noOfSeats < teamSize) {
+//       return res.status(400).json({ message: "Not enough seats available." });
+//     }
 
-    await professor.save();
+//     // Accept team: clear requests, add to acceptedTeams, update seats
+//     professor.requests = [];
+//     professor.acceptedTeams.push({
+//       members: requestToAccept.members,
+//       acceptedAt: new Date()
+//     });
+//     professor.noOfSeats -= teamSize;
 
-    res.status(200).json({
-      message: "Team accepted successfully.",
-      acceptedTeam: requestToAccept.members,
-      remainingSeats: professor.noOfSeats
-    });
+//     await professor.save();
 
-  } catch (error) {
-    console.error("acceptRequest error:", error);
-    res.status(500).json({ message: "Internal server error." });
-  }
-});
+//     res.status(200).json({
+//       message: "Team accepted successfully.",
+//       acceptedTeam: requestToAccept.members,
+//       remainingSeats: professor.noOfSeats
+//     });
+
+//   } catch (error) {
+//     console.error("acceptRequest error:", error);
+//     res.status(500).json({ message: "Internal server error." });
+//   }
+// });
 
 
 app.listen(port, () => {
