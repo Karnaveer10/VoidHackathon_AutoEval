@@ -4,10 +4,9 @@ const guideSchema = new mongoose.Schema({
   pid: {
     type: String, // or String
     required: true,
-    // unique: true,
-    default:""
+    unique: true
   },
-  name: { type: String }, // Professor name (optional)
+  name: { type: String, required: true }, // Professor name (optional)
   cabinNo: { type: String, required: true, default: '' },
   noOfSeats: { type: Number, required: true ,default: 3},
 

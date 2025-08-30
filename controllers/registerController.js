@@ -1,7 +1,4 @@
 const userModel = require('../models/guideModel')
-const createToken = (id)=>{
-    return jwt.sign( {id}, process.env.JWT_TOKEN_SECRET)
-}
 
 const register = async(req,res) =>{
     const { members, pid } = req.body;
@@ -21,7 +18,7 @@ const register = async(req,res) =>{
                         isAccepted: false,
                         requestedAt: new Date()
                     }
-                }
+                },
             },
             { new: true }
         );

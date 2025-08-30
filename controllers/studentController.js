@@ -3,7 +3,7 @@ const jwt = require('jsonwebtoken')
 const bcrypt = require('bcryptjs')
 const validator = require('validator')
 const createToken = (id)=>{
-    return jwt.sign( {id}, process.env.JWT_TOKEN_SECRET)
+    return jwt.sign( {id}, process.env.JWT_TOKEN_SECRET, { expiresIn: "1h" } )
 }
 
 const loginUser = async(req,res)=>{
