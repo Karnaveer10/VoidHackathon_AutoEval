@@ -67,13 +67,13 @@ const rejectReq = async(req, res) => {
     const { id } = req.body;
     const { pid } = req.user;
     console.log("Team to reject:", id);
-    if (!index) {
+    if (!id) {
       return res.status(400).json({ message: "No team provided" });
     }
 
-    await ProfModel.updateOne(
+    await guideModel.updateOne(
       { pid: pid },
-      { $pull: { requests: { id : id } } }
+      { $pull: { requests: { _id : id } } }
     );
 
     res.json({ message: "Team rejected successfully" });
