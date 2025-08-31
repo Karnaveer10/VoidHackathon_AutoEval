@@ -55,12 +55,42 @@ const getprof = async(req, res) => {
     }
 }
 
-const acceptReq = async(req, res) => {
+const acceptReq = async (req, res) => {
+  try {
+    const { id } = req.body;
+    const { pid } = req.user; 
+
+    if (!id){
+        return res.status(400).json({ message: "No team provided" });
+    } 
+
+    const prof = await guideModel.findOne({ pid });
+
+    if (!prof){ 
+        return res.status(404).json({ message: "Professor not found" });
+    }
+    
+    const teamToAccept = prof.requests.find((team) => team._id.toString() === id);
+    if (!teamToAccept){
+        return res.status(404).json({ message: "Team not found" });
+    }
+
+    prof.acceptedTeams.push(teamToAccept);
+
+    prof.requests = prof.requests.filter((team) => team._id.toString() !== id);
+
+    await prof.save();
+
+    res.json({ message: "Team accepted successfully", team: teamToAccept });
+  } 
+  catch (err) {
+    console.error("Error accepting team:", err);
+    res.status(500).json({ message: "Server error" });
+  }
+};
 
 
-}
-
-const rejectReq = async(req, res) => {
+const removeReq = async(req, res) => {
     try {
     console.log("in rejectReq");
     console.log("Request Body:", req.body);
@@ -83,4 +113,4 @@ const rejectReq = async(req, res) => {
   }
 }
 
-module.exports = { loginUser, getinfo , getprof , acceptReq , rejectReq};   
+module.exports = { loginUser, getinfo , getprof , acceptReq , removeReq};   
