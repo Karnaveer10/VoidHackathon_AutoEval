@@ -4,7 +4,7 @@ const jwt = require('jsonwebtoken')
 const bcrypt = require('bcryptjs')
 const validator = require('validator')
 const createToken = (pid)=>{
-    return jwt.sign( {id:pid}, process.env.JWT_TOKEN_SECRET, { expiresIn: "1h" } )
+    return jwt.sign( {pid}, process.env.JWT_TOKEN_SECRET, { expiresIn: "1h" } )
 }
 
 const loginUser = async(req,res)=>{
@@ -17,7 +17,10 @@ const loginUser = async(req,res)=>{
         const isMatch = await bcrypt.compare(password,user.password)
         if(!isMatch)
             return res.status(400).json({"message":"Invalid Email or Password"})
-        const token = createToken(user.pid)
+        console.log("Users pid: ",pid);
+        console.log("User found: ",user);
+        console.log("Creating token for pid: ", user.pid);
+        const token = createToken(user.pid);
         res.status(200).json({ token, name: user.name });
     } catch (error) {
         console.log(error)
@@ -25,7 +28,7 @@ const loginUser = async(req,res)=>{
     }
 }
 
-const getinfo = async (req, res) => {
+const getinfo = async(req, res) => {
     try {
         const guides = await guideModel.find();
         res.status(200).json(guides);
@@ -35,21 +38,11 @@ const getinfo = async (req, res) => {
     }
 }
 
-const getprof = async (req, res) => {
+const getprof = async(req, res) => {
     try {
-        const authHeader = req.headers.authorization;
-        if (!authHeader || !authHeader.startsWith("Bearer ")) {
-            return res.status(400).json({ message: 'Token missing or invalid format' });
-        }
+        const {pid} = req.user;
 
-        const token = authHeader.split(" ")[1];
-        console.log("Token received:", token);
-
-        const decoded = jwt.verify(token, process.env.JWT_TOKEN_SECRET); 
-        console.log("Decoded payload:", decoded);
-        console.log("Looking for ID:", decoded.id);
-
-        const prof = await guideModel.findOne({pid:decoded.id}).select('requests');
+        const prof = await guideModel.findOne({pid:pid}).select('requests');
 
         if (!prof) {
             return res.status(404).json({ message: 'Professor not found' });
@@ -62,4 +55,32 @@ const getprof = async (req, res) => {
     }
 }
 
-module.exports = { loginUser, getinfo , getprof };   
+const acceptReq = async(req, res) => {
+
+
+}
+
+const rejectReq = async(req, res) => {
+    try {
+    console.log("in rejectReq");
+    console.log("Request Body:", req.body);
+    const { id } = req.body;
+    const { pid } = req.user;
+    console.log("Team to reject:", id);
+    if (!index) {
+      return res.status(400).json({ message: "No team provided" });
+    }
+
+    await ProfModel.updateOne(
+      { pid: pid },
+      { $pull: { requests: { id : id } } }
+    );
+
+    res.json({ message: "Team rejected successfully" });
+  } catch (err) {
+    console.error("Error rejecting team:", err);
+    res.status(500).json({ message: "Server error" });
+  }
+}
+
+module.exports = { loginUser, getinfo , getprof , acceptReq , rejectReq};   

@@ -4,7 +4,7 @@ const profSchema = new mongoose.Schema(
         name:{
             type:String, required:true
         },
-        id:{
+        pid:{
             type:String, required:true
         },
         email:{

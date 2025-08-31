@@ -1,19 +1,22 @@
 const jwt = require('jsonwebtoken')
-const authMiddelware = async (req,res,next)=>{
-    const {token} = req.headers;
-    if(!token)
-       return res.status(401).json({"message":"token missing"})
-    try {
-        const token_decode = jwt.verify(
-            token,
-            process.env.JWT_TOKEN_SECRET
-        )
-        req.userId = token_decode.id;
-        next()
+const authMiddleware = async (req, res, next) => {
+  try {
+    const authHeader = req.headers.authorization;
 
-    } catch (error) {
-        console.log(error)
-        res.status(401).json({"message":"Token is invalid"})
+    if (!authHeader || !authHeader.startsWith("Bearer ")) {
+      return res.status(401).json({ message: "Token missing or invalid format" });
     }
-}
-module.exports = authMiddelware
+
+    const token = authHeader.split(" ")[1];
+    const decoded = jwt.verify(token, process.env.JWT_TOKEN_SECRET);
+
+    req.user = decoded;
+
+    next(); 
+  } catch (err) {
+    console.error(err);
+    res.status(401).json({ message: "Invalid or expired token" });
+  }
+};
+
+module.exports = authMiddleware

@@ -2,8 +2,8 @@ const userModel = require('../models/studentModel')
 const jwt = require('jsonwebtoken')
 const bcrypt = require('bcryptjs')
 const validator = require('validator')
-const createToken = (id)=>{
-    return jwt.sign( {id}, process.env.JWT_TOKEN_SECRET, { expiresIn: "1h" } )
+const createToken = (regno)=>{
+    return jwt.sign( {regno}, process.env.JWT_TOKEN_SECRET, { expiresIn: "30m" } )
 }
 
 const loginUser = async(req,res)=>{
@@ -11,14 +11,16 @@ const loginUser = async(req,res)=>{
 
     try {
         const user = await userModel.findOne({regno})
+        
         if(!user)
             return res.status(400).json({"message":"Invalid Email or Password"})
         const isMatch = await bcrypt.compare(password,user.password)
         if(!isMatch)
             return res.status(400).json({"message":"Invalid Email or Password"})
-        const token = createToken(user._id)
+        const token = createToken(user.regno)
         res.status(200).json({token})
-    } catch (error) {
+    } 
+    catch (error){
         console.log(error)
         res.status(500).json({"message":"Internal Server Error"}) 
     }
@@ -26,17 +28,9 @@ const loginUser = async(req,res)=>{
 
 const getInfo = async (req, res) => {
     try {
-        const authHeader = req.headers.authorization;
-        if (!authHeader || !authHeader.startsWith("Bearer ")) {
-            return res.status(400).json({ message: 'Token missing or invalid format' });
-        }
+        const {regno} = req.user;
 
-        const token = authHeader.split(" ")[1];
-        console.log("Token received:", token); // ✅ This will now show up
-
-        const decoded = jwt.verify(token, process.env.JWT_TOKEN_SECRET);
-
-        const student = await userModel.findById(decoded.id).select('-password -role -_id -email');
+        const student = await userModel.findOne({regno : regno}).select('-password -role -_id -email');
 
         if (!student) {
             return res.status(404).json({ message: 'Student not found' });
