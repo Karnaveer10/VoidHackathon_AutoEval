@@ -132,19 +132,4 @@ const acceptedTeams = async(req, res) =>{
     }
 };  
 
-const getDetails = async(req, res) => {
-    try {
-        const {pid} = req.user;
-        const prof = await guideModel.findOne({pid:pid}).select('name');
-        if (!prof) {
-            return res.status(404).json({ message: 'Professor not found' });
-        }
-        res.status(200).json(prof.name);
-    } 
-    catch (err) {
-        console.error(err);
-        res.status(500).json({ message: 'Internal Server Error' });
-    }
-};
-
-module.exports = { loginUser, getinfo , getprof , acceptReq , removeReq , acceptedTeams , getDetails };   
+module.exports = { loginUser, getinfo , getprof , acceptReq , removeReq , acceptedTeams };   
