@@ -3,6 +3,7 @@ const guideModel = require('../models/guideModel')
 const jwt = require('jsonwebtoken')
 const bcrypt = require('bcryptjs')
 const validator = require('validator')
+const { get } = require('../Routes/profRouter')
 const createToken = (pid)=>{
     return jwt.sign( {pid}, process.env.JWT_TOKEN_SECRET, { expiresIn: "1h" } )
 }
@@ -17,9 +18,6 @@ const loginUser = async(req,res)=>{
         const isMatch = await bcrypt.compare(password,user.password)
         if(!isMatch)
             return res.status(400).json({"message":"Invalid Email or Password"})
-        console.log("Users pid: ",pid);
-        console.log("User found: ",user);
-        console.log("Creating token for pid: ", user.pid);
         const token = createToken(user.pid);
         res.status(200).json({ token, name: user.name });
     } catch (error) {
@@ -75,9 +73,13 @@ const acceptReq = async (req, res) => {
         return res.status(404).json({ message: "Team not found" });
     }
 
+    const len = teamToAccept.members?.length;
+
     prof.acceptedTeams.push(teamToAccept);
 
     prof.requests = prof.requests.filter((team) => team._id.toString() !== id);
+    
+    prof.noOfSeats = prof.noOfSeats - len;
 
     await prof.save();
 
@@ -92,8 +94,6 @@ const acceptReq = async (req, res) => {
 
 const removeReq = async(req, res) => {
     try {
-    console.log("in rejectReq");
-    console.log("Request Body:", req.body);
     const { id } = req.body;
     const { pid } = req.user;
     console.log("Team to reject:", id);
@@ -113,4 +113,38 @@ const removeReq = async(req, res) => {
   }
 }
 
-module.exports = { loginUser, getinfo , getprof , acceptReq , removeReq};   
+const acceptedTeams = async(req, res) =>{
+    try {
+        const {pid} = req.user;
+        const prof = await guideModel.findOne({pid:pid}).select('acceptedTeams name');
+
+        if (!prof) {
+            return res.status(404).json({ message: 'Professor not found' });
+        }   
+        res.status(200).json({ 
+            name: prof.name,
+            acceptedTeams:prof.acceptedTeams
+        });
+    } 
+    catch (err){
+        console.error("Internal server errors", err);
+        res.status(500).json({ message: "Server error" });
+    }
+};  
+
+const getDetails = async(req, res) => {
+    try {
+        const {pid} = req.user;
+        const prof = await guideModel.findOne({pid:pid}).select('name');
+        if (!prof) {
+            return res.status(404).json({ message: 'Professor not found' });
+        }
+        res.status(200).json(prof.name);
+    } 
+    catch (err) {
+        console.error(err);
+        res.status(500).json({ message: 'Internal Server Error' });
+    }
+};
+
+module.exports = { loginUser, getinfo , getprof , acceptReq , removeReq , acceptedTeams , getDetails };   
