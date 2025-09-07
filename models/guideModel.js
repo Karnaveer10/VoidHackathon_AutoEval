@@ -8,7 +8,7 @@ const guideSchema = new mongoose.Schema({
   },
   name: { type: String, required: true }, // Professor name (optional)
   cabinNo: { type: String, required: true, default: '' },
-  noOfSeats: { type: Number, required: true ,default: 3},
+  noOfSeats: { type: Number, required: true, default: 3 },
 
   requests: [
     {
@@ -34,9 +34,26 @@ const guideSchema = new mongoose.Schema({
           regNo: { type: String, required: true }
         }
       ],
-      acceptedAt: { type: Date, default: Date.now }
+      acceptedAt: { type: Date, default: Date.now },
+      submissions: [
+        {
+          type: {
+            type: String,
+            enum: ["abstract", "review1", "review2", "final"],
+            required: true
+          },
+          fileUrl: String,
+          status: {
+            type: String,
+            enum: ["pending", "accepted", "rejected"],
+            default: "pending"
+          },
+          remarks: String,
+          uploadedAt: { type: Date, default: Date.now }
+        }
+      ]
     }
   ]
-});
+}); 
 
 module.exports = mongoose.models.guide || mongoose.model('guide', guideSchema);

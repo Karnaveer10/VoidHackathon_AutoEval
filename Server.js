@@ -21,6 +21,7 @@ app.use('/api/student', require('./Routes/studentRouter'))
 app.use('/api/prof', require('./Routes/profRouter'))
 app.use('/api/external', require('./Routes/externalRouter'))
 app.use('/api/register', require('./Routes/registerRouter'))
+app.use('/api/upload', require('./Routes/uploadRouter'))
 
 app.get("/", (req, res) => {
   res.send("API Working")
