@@ -14,18 +14,35 @@ const port = process.env.PORT || 3000;
 const profs = require('./models/profModel')
 const Panel = require('./models/panelModel')
 console.log("Panel:", Panel);
+const http = require('http');
+const { Server } = require('socket.io');
 
-connectDB()
+connectDB();
 
-app.use('/api/student', require('./Routes/studentRouter'))
-app.use('/api/prof', require('./Routes/profRouter'))
-app.use('/api/external', require('./Routes/externalRouter'))
-app.use('/api/register', require('./Routes/registerRouter'))
-app.use('/api/upload', require('./Routes/uploadRouter'))
+// Routes
+app.use('/api/student', require('./Routes/studentRouter'));
+app.use('/api/prof', require('./Routes/profRouter'));
+app.use('/api/external', require('./Routes/externalRouter'));
+app.use('/api/register', require('./Routes/registerRouter'));
+app.use('/api/upload', require('./Routes/uploadRouter'));
 
-app.get("/", (req, res) => {
-  res.send("API Working")
-})
+// Basic routes
+app.get("/", (req, res) => res.send("API Working"));
+
+// Create server & socket.io
+const server = http.createServer(app);
+const io = new Server(server, { cors: { origin: "*" } });
+const studentController = require('./controllers/studentController');
+studentController.setIo(io);
+// Socket.io connection
+io.on("connection", (socket) => {
+  console.log("New client connected:", socket.id);
+  socket.on("joinRoom", (roomId) => socket.join(roomId));
+  socket.on("disconnect", () => console.log("Client disconnected"));
+});
+
+// Export io for controllers
+
 app.post("/panel_update", async (req, res) => {
   try {
     const { guideName, panel1, panel2 } = req.body;
@@ -114,6 +131,5 @@ app.get('/admin_get_profdata', async (req, res) => {
   }
 })
 
-app.listen(port, () => {
-  console.log(`Server started on http://localhost:${port}`)
-})
+server.listen(port, () => console.log(`Server running on http://localhost:${port}`));
+module.exports = {io};

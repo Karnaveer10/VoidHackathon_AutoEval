@@ -1,0 +1,62 @@
+[
+  {
+    "employee_name": "Michael Scott",
+    "department": "Sales",
+    "designation": "Regional Manager",
+    "employee_grade": "G4",
+    "exit_date": "2025-08-10",
+    "exit_reason": "Resignation",
+    "assets_returned": true,
+    "settlement_done": false,
+    "exit_interview_done": true,
+    "exit_status": "Pending"
+  },
+  {
+    "employee_name": "Pam Beesly",
+    "department": "Marketing",
+    "designation": "Marketing Associate",
+    "employee_grade": "G2",
+    "exit_date": "2025-07-30",
+    "exit_reason": "Resignation",
+    "assets_returned": true,
+    "settlement_done": true,
+    "exit_interview_done": true,
+    "exit_status": "Completed"
+  },
+  {
+    "employee_name": "Jim Halpert",
+    "department": "Sales",
+    "designation": "Sales Executive",
+    "employee_grade": "G3",
+    "exit_date": "2025-08-15",
+    "exit_reason": "Resignation",
+    "assets_returned": false,
+    "settlement_done": false,
+    "exit_interview_done": false,
+    "exit_status": "Pending"
+  },
+  {
+    "employee_name": "Dwight Schrute",
+    "department": "Sales",
+    "designation": "Assistant Manager",
+    "employee_grade": "G3",
+    "exit_date": "2025-08-20",
+    "exit_reason": "Termination",
+    "assets_returned": true,
+    "settlement_done": true,
+    "exit_interview_done": true,
+    "exit_status": "Completed"
+  },
+  {
+    "employee_name": "Angela Martin",
+    "department": "Accounting",
+    "designation": "Accountant",
+    "employee_grade": "G2",
+    "exit_date": "2025-07-25",
+    "exit_reason": "Resignation",
+    "assets_returned": true,
+    "settlement_done": false,
+    "exit_interview_done": false,
+    "exit_status": "Pending"
+  }
+]

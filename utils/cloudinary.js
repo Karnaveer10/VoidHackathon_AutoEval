@@ -8,14 +8,14 @@ cloudinary.config({
   api_secret: process.env.CLOUDINARY_API_SECRET 
 });
 
-const uploadOnCloudinary = async (localFilePath) => {
+    const uploadOnCloudinary = async (localFilePath, options =  {  resource_type: "raw",
+  type: "upload",        // ✅ ensures it's public, not authenticated
+  format: "pdf"   }) => {
     try {
         if (!localFilePath) return null;
 
-        // Upload the file on Cloudinary
-        const response = await cloudinary.uploader.upload(localFilePath, {
-            resource_type: "raw"
-        });
+        // Upload the file on Cloudinary with options
+        const response = await cloudinary.uploader.upload(localFilePath, options);
 
         // Remove local file if it exists
         if (fs.existsSync(localFilePath)) fs.unlinkSync(localFilePath);
@@ -30,5 +30,6 @@ const uploadOnCloudinary = async (localFilePath) => {
         return null;
     }
 };
+
 
 module.exports = { uploadOnCloudinary };
