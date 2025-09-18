@@ -1,6 +1,6 @@
 const express = require("express");
 const { upload } = require("../middleware/multer");
-const { uploadFile } = require("../controllers/uploadController");
+const { uploadFiles } = require("../controllers/uploadController");
 const auth = require("../middleware/auth");
 
 const userRouter = express.Router();
@@ -9,6 +9,6 @@ const userRouter = express.Router();
 userRouter.use(auth);
 
 // route for file upload
-userRouter.post("/uploadFile", upload.single("file"), uploadFile);
+userRouter.post("/uploadFile", upload, uploadFiles);
 
 module.exports = userRouter;

@@ -37,7 +37,7 @@ const loginUser = async (req, res) => {
         guideDoc = await guide.findOne({
             "requests.members.regNo": regno
         });
-
+        console.log("requested", guideDoc)
         if (guideDoc) {
             return res.status(200).json({
                 token,
@@ -45,11 +45,11 @@ const loginUser = async (req, res) => {
                 guide: guideDoc.name   // professor name
             });
         }
-
+        console.log("requested", guideDoc)
         // ✅ If not found anywhere
         return res.status(200).json({
             token,
-            status: "notRegistered"
+            status: "notregistered"
         });
 
     } catch (error) {
@@ -58,7 +58,11 @@ const loginUser = async (req, res) => {
     }
 };
 
+let io;
 
+const setIo = (socketIo) => {
+    io = socketIo;
+};
 const getInfo = async (req, res) => {
     try {
         const { regno } = req.user;
@@ -77,23 +81,80 @@ const getInfo = async (req, res) => {
 };
 
 const getRegData = async (req, res) => {
+    try {
+        const { regno } = req.user;
+
+        const guideDoc = await guide.findOne({ "acceptedTeams.members.regNo": regno }).lean();
+
+        if (!guideDoc || !guideDoc.acceptedTeams || guideDoc.acceptedTeams.length === 0) {
+            return res.status(404).json({ message: "Accepted team not found" });
+        }
+
+        const team = guideDoc.acceptedTeams[0]; // Only one accepted team
+
+        const guideData = {
+            name: guideDoc.name,
+            submissions: team.submissions || [],
+            members: team.members || []
+        };
+        res.status(200).json(guideData);
+
+    } catch (err) {
+        console.error(err);
+        res.status(500).json({ message: "Server error" });
+    }
+};
+
+const getRequestedData = async (req, res) => {
   try {
-    const { regno } = req.user;
+    const { regno } = req.user; // student regno
 
-    const guideDoc = await guide.findOne({ "acceptedTeams.members.regNo": regno }).lean();
+    // --- Check if student is still in requests ---
+    let guideDoc = await guide.findOne({
+      "requests.members.regNo": regno
+    }).lean();
 
-    if (!guideDoc || !guideDoc.acceptedTeams || guideDoc.acceptedTeams.length === 0) {
-      return res.status(404).json({ message: "Accepted team not found" });
+    if (guideDoc) {
+      const requestTeam = guideDoc.requests.find(req =>
+        req.members.some(member => member.regNo === regno)
+      );
+
+      if (requestTeam) {
+        const guideData = {
+          name: guideDoc.name,
+          members: requestTeam.members || [],
+          status: "requested"
+        };
+
+        io.to(regno).emit("requestedUpdate", guideData);
+        return res.status(200).json(guideData);
+      }
     }
 
-    const team = guideDoc.acceptedTeams[0]; // Only one accepted team
+    // --- If not in requests, check acceptedTeams ---
+    guideDoc = await guide.findOne({
+      "acceptedTeams.members.regNo": regno
+    }).lean();
 
-    const guideData = {
-      name: guideDoc.name,
-      submissions: team.submissions || [],
-      members : team.members || []
-    };
-    res.status(200).json(guideData);
+    if (guideDoc) {
+      const acceptedTeam = guideDoc.acceptedTeams.find(team =>
+        team.members.some(member => member.regNo === regno)
+      );
+
+      if (acceptedTeam) {
+        const guideData = {
+          name: guideDoc.name,
+          members: acceptedTeam.members || [],
+          status: "accepted"
+        };
+
+        io.to(regno).emit("requestedUpdate", guideData);
+        return res.status(200).json(guideData);
+      }
+    }
+
+    // --- Not found anywhere ---
+    return res.status(404).json({ message: "Team not found" });
 
   } catch (err) {
     console.error(err);
@@ -106,4 +167,5 @@ const getRegData = async (req, res) => {
 
 
 
-module.exports = { loginUser, getInfo, getRegData };
+
+module.exports = { loginUser, getInfo, getRegData, getRequestedData, setIo };

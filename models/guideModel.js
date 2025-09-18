@@ -37,23 +37,21 @@ const guideSchema = new mongoose.Schema({
       acceptedAt: { type: Date, default: Date.now },
       submissions: [
         {
-          type: {
-            type: String,
-            enum: ["abstract", "review1", "review2", "final"],
-            required: true
-          },
-          fileUrl: String,
-          status: {
-            type: String,
-            enum: ["pending", "accepted", "rejected"],
-            default: "pending"
-          },
-          remarks: String,
-          uploadedAt: { type: Date, default: Date.now }
+          type: { type: String, enum: ["Abstract", "Review 1", "Review 2", "Final Submission"] },
+          files: [
+            {
+              fileUrl: { type: String, required: true },
+              fileName: { type: String, required: true } 
+            }
+          ],
+          status: { type: String, enum: [ "pending", "accepted", "resubmit","submitted"], default: "pending" },
+          remarks: { type: String, default: "" },
+          marks: { type: Number, default: 0 }
         }
       ]
+
     }
   ]
-}); 
+});
 
 module.exports = mongoose.models.guide || mongoose.model('guide', guideSchema);
