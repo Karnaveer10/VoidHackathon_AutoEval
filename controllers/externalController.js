@@ -17,7 +17,14 @@ const loginUser = async(req,res)=>{
         if(!isMatch)
             return res.status(400).json({"message":"Invalid Email or Password"})
         const token = createToken(user._id)
-        res.status(200).json({token})
+        // Set cookie for externals too
+        res.cookie("token", token, {
+            httpOnly: true,
+            secure: process.env.NODE_ENV === "production",
+            sameSite: process.env.NODE_ENV === "production" ? "strict" : "lax",
+            maxAge: 60 * 60 * 1000 // 1 hour
+        });
+        res.status(200).json({ message: 'Logged in' })
     } catch (error) {
         console.log(error)
         res.status(500).json({"message":"Internal Server Error"}) 

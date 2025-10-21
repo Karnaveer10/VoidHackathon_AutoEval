@@ -2,55 +2,65 @@ const userModel = require('../models/studentModel')
 const guide = require('../models/guideModel')
 const jwt = require('jsonwebtoken')
 const bcrypt = require('bcryptjs')
-const validator = require('validator')
+let io;
 const createToken = (regno) => {
     return jwt.sign({ regno }, process.env.JWT_TOKEN_SECRET, { expiresIn: "30m" })
 }
+const setIo = (socketIo) => {
+    io = socketIo;
+};
 
 const loginUser = async (req, res) => {
-    const { regno, password } = req.body;
+  const { regno, password } = req.body;
 
     try {
         const user = await userModel.findOne({ regno });
 
         if (!user)
-            return res.status(400).json({ message: "Invalid Email or Password" });
+            return res.status(400).json({ message: "Invalid Registration number or Password" });
 
         const isMatch = await bcrypt.compare(password, user.password);
         if (!isMatch)
-            return res.status(400).json({ message: "Invalid Email or Password" });
+            return res.status(400).json({ message: "Invalid Registration number or Password" });
 
         const token = createToken(user.regno);
+
+        // Set JWT as HttpOnly cookie for students as well
+        res.cookie("token", token, {
+        httpOnly: true,
+        secure: process.env.NODE_ENV === "production",
+        sameSite: process.env.NODE_ENV === "production" ? "strict" : "lax",
+        maxAge: 30 * 60 * 1000 // 30 minutes
+        });
 
         let guideDoc = await guide.findOne({
             "acceptedTeams.members.regNo": regno
         });
 
-        if (guideDoc) {
-            return res.status(200).json({
-                token,
-                status: "accepted",
-                guide: guideDoc.name   // professor name
-            });
-        }
-
-        guideDoc = await guide.findOne({
-            "requests.members.regNo": regno
-        });
-        console.log("requested", guideDoc)
-        if (guideDoc) {
-            return res.status(200).json({
-                token,
-                status: "requested",
-                guide: guideDoc.name   // professor name
-            });
-        }
-        console.log("requested", guideDoc)
-        // ✅ If not found anywhere
+      if (guideDoc) {
         return res.status(200).json({
-            token,
-            status: "notregistered"
+          status: "accepted",
+          guide: guideDoc.name   // professor name
         });
+      }
+
+      guideDoc = await guide.findOne({
+          "requests.members.regNo": regno
+      });
+      console.log("requested", guideDoc)
+
+      if (guideDoc) {
+        return res.status(200).json({
+          status: "requested",
+          guide: guideDoc.name   // professor name
+        });
+      }
+      console.log("requested", guideDoc)
+
+      // ✅ If not found anywhere
+      return res.status(200).json({
+        status: "notregistered"
+      });
 
     } catch (error) {
         console.error(error);
@@ -58,11 +68,6 @@ const loginUser = async (req, res) => {
     }
 };
 
-let io;
-
-const setIo = (socketIo) => {
-    io = socketIo;
-};
 const getInfo = async (req, res) => {
     try {
         const { regno } = req.user;
@@ -161,11 +166,5 @@ const getRequestedData = async (req, res) => {
     res.status(500).json({ message: "Server error" });
   }
 };
-
-
-
-
-
-
 
 module.exports = { loginUser, getInfo, getRegData, getRequestedData, setIo };

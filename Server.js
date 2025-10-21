@@ -3,17 +3,18 @@ const cors = require('cors')
 require('dotenv').config()
 const app = express();
 app.use(express.json())
-app.use(cors())
-const router = express.Router();
-const path = require('path');
+
+// Allow frontend origin and enable credentials so cookies (HttpOnly) are sent
+const FRONTEND_ORIGIN = process.env.FRONTEND_ORIGIN || 'http://localhost:5173';
+app.use(cors({ origin: FRONTEND_ORIGIN, credentials: true }));
 const cookieParser = require('cookie-parser');
+app.use(cookieParser());
 const mongoose = require('mongoose')
 const connectDB = require('./config/dbConn')
 const guide = require('./models/guideModel')
-const port = process.env.PORT || 3000;
+const port = process.env.PORT;
 const profs = require('./models/profModel')
 const Panel = require('./models/panelModel')
-console.log("Panel:", Panel);
 const http = require('http');
 const { Server } = require('socket.io');
 
@@ -25,13 +26,11 @@ app.use('/api/prof', require('./Routes/profRouter'));
 app.use('/api/external', require('./Routes/externalRouter'));
 app.use('/api/register', require('./Routes/registerRouter'));
 app.use('/api/upload', require('./Routes/uploadRouter'));
-
-// Basic routes
-app.get("/", (req, res) => res.send("API Working"));
+app.use('/api/logout', require('./Routes/logoutRouter'));
 
 // Create server & socket.io
 const server = http.createServer(app);
-const io = new Server(server, { cors: { origin: "*" } });
+const io = new Server(server, { cors: { origin: FRONTEND_ORIGIN, credentials: true } });
 const studentController = require('./controllers/studentController');
 studentController.setIo(io);
 // Socket.io connection
@@ -41,8 +40,10 @@ io.on("connection", (socket) => {
   socket.on("disconnect", () => console.log("Client disconnected"));
 });
 
-// Export io for controllers
+// Basic routes
+app.get("/", (req, res) => res.send("API Working"));
 
+// Export io for controllers
 app.post("/panel_update", async (req, res) => {
   try {
     const { guideName, panel1, panel2 } = req.body;

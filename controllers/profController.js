@@ -3,28 +3,40 @@ const guideModel = require('../models/guideModel')
 const jwt = require('jsonwebtoken')
 const bcrypt = require('bcryptjs')
 const validator = require('validator')
-const { get } = require('../Routes/profRouter')
 const createToken = (pid) => {
-    return jwt.sign({ pid }, process.env.JWT_TOKEN_SECRET, { expiresIn: "1h" })
-}
+    return jwt.sign({ pid }, process.env.JWT_TOKEN_SECRET, { expiresIn: "1h" });
+};
 
 const loginUser = async (req, res) => {
     const { pid, password } = req.body;
 
     try {
-        const user = await profModel.findOne({ pid })
+        const user = await profModel.findOne({ pid });
         if (!user)
-            return res.status(400).json({ "message": "Invalid Email or Password" })
-        const isMatch = await bcrypt.compare(password, user.password)
+            return res.status(400).json({ message: "Invalid Email or Password" });
+
+        const isMatch = await bcrypt.compare(password, user.password);
         if (!isMatch)
-            return res.status(400).json({ "message": "Invalid Email or Password" })
+            return res.status(400).json({ message: "Invalid Email or Password" });
+
         const token = createToken(user.pid);
-        res.status(200).json({ token, name: user.name });
+
+        // Set JWT as HttpOnly cookie
+        res.cookie("token", token, {
+            httpOnly: true,                                   // can't access via JS
+            secure: process.env.NODE_ENV === "production",    // only HTTPS in prod
+            sameSite: process.env.NODE_ENV === "production" ? "strict" : "lax",
+            maxAge: 30 * 60 * 1000                             // 30 minutes
+        });
+        
+        res.status(200).json({ name: user.name });
+
     } catch (error) {
-        console.log(error)
-        res.status(500).json({ "message": "Internal Server Error" })
+        console.log(error);
+        res.status(500).json({ message: "Check your internet connection" });
     }
-}
+};
+
 
 const getinfo = async (req, res) => {
     try {
