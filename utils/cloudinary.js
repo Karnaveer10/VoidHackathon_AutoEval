@@ -1,5 +1,6 @@
 const { v2: cloudinary } = require("cloudinary");
 const fs = require("fs");
+const path = require("path");
 require('dotenv').config();
 
 cloudinary.config({ 
@@ -8,28 +9,42 @@ cloudinary.config({
   api_secret: process.env.CLOUDINARY_API_SECRET 
 });
 
-    const uploadOnCloudinary = async (localFilePath, options =  {  resource_type: "raw",
-  type: "upload",        // ✅ ensures it's public, not authenticated
-  format: "pdf"   }) => {
-    try {
-        if (!localFilePath) return null;
+const uploadOnCloudinary = async (localFilePath, options = {}) => {
+  try {
+    if (!localFilePath) return null;
 
-        // Upload the file on Cloudinary with options
-        const response = await cloudinary.uploader.upload(localFilePath, options);
+    // Determine resource_type based on file extension
+    const ext = path.extname(localFilePath).toLowerCase();
+    const imageExtensions = [".png", ".jpg", ".jpeg", ".gif", ".webp"];
+    const pptExtensions = [".ppt", ".pptx"];
+    const txtExtensions = [".txt"];
+    const pdfExtensions = [".pdf"];
 
-        // Remove local file if it exists
-        if (fs.existsSync(localFilePath)) fs.unlinkSync(localFilePath);
+    let resourceType = "raw"; // default
+    if (imageExtensions.includes(ext)) resourceType = "image"; // images
+    // raw is fine for pdf, ppt, txt, no need to change
 
-        return response;
-    } catch (error) {
-        console.error("Cloudinary upload error:", error);
+    // Merge minimal options with auto-detected resource_type
+    const uploadOptions = {
+      resource_type: resourceType,
+      type: "upload", // public
+      ...options
+    };
 
-        // Remove local file if it exists, even on error
-        if (localFilePath && fs.existsSync(localFilePath)) fs.unlinkSync(localFilePath);
+    // Upload file
+    const response = await cloudinary.uploader.upload(localFilePath, uploadOptions);
 
-        return null;
-    }
+    // Remove local file
+    if (fs.existsSync(localFilePath)) fs.unlinkSync(localFilePath);
+
+    return response;
+  } catch (error) {
+    console.error("Cloudinary upload error:", error.message);
+
+    if (localFilePath && fs.existsSync(localFilePath)) fs.unlinkSync(localFilePath);
+
+    return null;
+  }
 };
-
 
 module.exports = { uploadOnCloudinary };

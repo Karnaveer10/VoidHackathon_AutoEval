@@ -13,10 +13,9 @@ const guide = require('./models/guideModel')
 const port = process.env.PORT || 3000;
 const profs = require('./models/profModel')
 const Panel = require('./models/panelModel')
-console.log("Panel:", Panel);
 const http = require('http');
-const { Server } = require('socket.io');
-
+// const { Server } = require('socket.io');
+const {initSocket} = require ("./utils/Socket.js")
 connectDB();
 
 // Routes
@@ -31,15 +30,17 @@ app.get("/", (req, res) => res.send("API Working"));
 
 // Create server & socket.io
 const server = http.createServer(app);
-const io = new Server(server, { cors: { origin: "*" } });
-const studentController = require('./controllers/studentController');
-studentController.setIo(io);
-// Socket.io connection
-io.on("connection", (socket) => {
-  console.log("New client connected:", socket.id);
-  socket.on("joinRoom", (roomId) => socket.join(roomId));
-  socket.on("disconnect", () => console.log("Client disconnected"));
-});
+
+const io = initSocket(server);
+// const io = new Server(server, { cors: { origin: "*" } });
+// const studentController = require('./controllers/studentController');
+// studentController.setIo(io);
+// // Socket.io connection
+// io.on("connection", (socket) => {
+//   console.log("New client connected:", socket.id);
+//   socket.on("joinRoom", (roomId) => socket.join(roomId));
+//   socket.on("disconnect", () => console.log("Client disconnected"));
+// });
 
 // Export io for controllers
 

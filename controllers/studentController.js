@@ -3,6 +3,8 @@ const guide = require('../models/guideModel')
 const jwt = require('jsonwebtoken')
 const bcrypt = require('bcryptjs')
 const validator = require('validator')
+const { getIo } = require("../utils/Socket.js");
+
 const createToken = (regno) => {
     return jwt.sign({ regno }, process.env.JWT_TOKEN_SECRET, { expiresIn: "30m" })
 }
@@ -58,11 +60,11 @@ const loginUser = async (req, res) => {
     }
 };
 
-let io;
+// let io;
 
-const setIo = (socketIo) => {
-    io = socketIo;
-};
+// const setIo = (socketIo) => {
+//     io = socketIo;
+// };
 const getInfo = async (req, res) => {
     try {
         const { regno } = req.user;
@@ -108,7 +110,7 @@ const getRegData = async (req, res) => {
 const getRequestedData = async (req, res) => {
   try {
     const { regno } = req.user; // student regno
-
+    const io = getIo()
     // --- Check if student is still in requests ---
     let guideDoc = await guide.findOne({
       "requests.members.regNo": regno
@@ -168,4 +170,4 @@ const getRequestedData = async (req, res) => {
 
 
 
-module.exports = { loginUser, getInfo, getRegData, getRequestedData, setIo };
+module.exports = { loginUser, getInfo, getRegData, getRequestedData };
