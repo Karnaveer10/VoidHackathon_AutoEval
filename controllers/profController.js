@@ -3,6 +3,9 @@ const guideModel = require('../models/guideModel')
 const jwt = require('jsonwebtoken')
 const bcrypt = require('bcryptjs')
 const validator = require('validator')
+const { get } = require('../Routes/profRouter')
+const { getIo } = require("../utils/Socket.js");
+
 const createToken = (pid) => {
     return jwt.sign({ pid }, process.env.JWT_TOKEN_SECRET, { expiresIn: "1h" });
 };
@@ -64,11 +67,12 @@ const getprof = async (req, res) => {
         return res.status(401).json({ message: 'Invalid or expired token' });
     }
 }
-
 const acceptReq = async (req, res) => {
     try {
         const { id } = req.body;
         const { pid } = req.user;
+        const io = getIo();
+
 
         if (!id) {
             return res.status(400).json({ message: "No team provided" });
@@ -85,7 +89,7 @@ const acceptReq = async (req, res) => {
             return res.status(404).json({ message: "Team not found" });
         }
 
-        const len = teamToAccept.members?.length;
+        const len = teamToAccept.members?.length || 0;
         const initialSubmissions = [
             { type: "Abstract", status: "pending", fileUrl: [], remarks: "", marks: 0 },
             { type: "Review 1", status: "pending", fileUrl: [], remarks: "", marks: 0 },
@@ -94,13 +98,21 @@ const acceptReq = async (req, res) => {
         ];
 
         prof.acceptedTeams.push({
-            ...teamToAccept.toObject(), // all team fields
+            ...teamToAccept.toObject(),
             submissions: initialSubmissions
         });
 
         prof.requests = prof.requests.filter((team) => team._id.toString() !== id);
-
         prof.noOfSeats = prof.noOfSeats - len;
+
+
+        teamToAccept.members.forEach(member => {
+            io.to(member.regNo).emit("requestedUpdate", {
+                name: prof.name,
+                members: teamToAccept.members,
+                status: "accepted"
+            });
+        });
 
         await prof.save();
 
@@ -117,16 +129,29 @@ const removeReq = async (req, res) => {
     try {
         const { id } = req.body;
         const { pid } = req.user;
+        const io = getIo();
+
         console.log("Team to reject:", id);
         if (!id) {
             return res.status(400).json({ message: "No team provided" });
         }
+        const prof = await guideModel.findOne({ pid });
 
+        const teamToReject = prof.requests.find(team => team._id.toString() === id);
+        if (!teamToReject) {
+            return res.status(404).json({ message: "Team not found" });
+        }
         await guideModel.updateOne(
             { pid: pid },
             { $pull: { requests: { _id: id } } }
         );
-
+        teamToReject.members.forEach(member => {
+            io.to(member.regNo).emit("requestedUpdate", {
+                name: prof.name,
+                members: teamToReject.members,
+                status: "rejected"
+            });
+        });
         res.json({ message: "Team rejected successfully" });
     } catch (err) {
         console.error("Error rejecting team:", err);
@@ -201,7 +226,7 @@ const reSubmit = async (req, res) => {
                     "acceptedTeams.$[].submissions.$[sub].marks": marks,
                     "acceptedTeams.$[].submissions.$[sub].remarks": remarks,
                     "acceptedTeams.$[].submissions.$[sub].status": "resubmit",
-                     "acceptedTeams.$[].submissions.$[sub].files": [],
+                    "acceptedTeams.$[].submissions.$[sub].files": [],
                 }
             },
             {
@@ -222,4 +247,4 @@ const reSubmit = async (req, res) => {
         res.status(500).json({ message: "Internal server error" })
     }
 }
-module.exports = { loginUser, getinfo, getprof, acceptReq, removeReq, acceptedTeams, acceptSubmission ,reSubmit};   
+module.exports = { loginUser, getinfo, getprof, acceptReq, removeReq, acceptedTeams, acceptSubmission, reSubmit };   
