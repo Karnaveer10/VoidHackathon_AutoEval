@@ -32,15 +32,6 @@ app.use('/api/logout', require('./Routes/logoutRouter'));
 const server = http.createServer(app);
 
 const io = initSocket(server);
-// const io = new Server(server, { cors: { origin: "*" } });
-// const studentController = require('./controllers/studentController');
-// studentController.setIo(io);
-// // Socket.io connection
-// io.on("connection", (socket) => {
-//   console.log("New client connected:", socket.id);
-//   socket.on("joinRoom", (roomId) => socket.join(roomId));
-//   socket.on("disconnect", () => console.log("Client disconnected"));
-// });
 
 // Export io for controllers
 app.post("/panel_update", async (req, res) => {
