@@ -41,12 +41,18 @@ const guideSchema = new mongoose.Schema({
           files: [
             {
               fileUrl: { type: String, required: true },
-              fileName: { type: String, required: true } 
+              fileName: { type: String, required: true }
             }
           ],
-          status: { type: String, enum: [ "pending", "accepted", "resubmit","submitted"], default: "pending" },
+          status: { type: String, enum: ["pending", "accepted", "resubmit", "submitted"], default: "pending" },
           remarks: { type: String, default: "" },
-          marks: { type: Number, default: 0 }
+          marks: [
+            {
+              regNo: { type: String, required: true },
+              name : {type: String , required:true},
+              score: { type: Number, default: 0 }
+            }
+          ]
         }
       ]
 

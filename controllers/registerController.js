@@ -1,7 +1,10 @@
 const userModel = require('../models/guideModel')
+const { getIo } = require("../utils/Socket.js");
 
 const register = async(req,res) =>{
     const { members, pid } = req.body;
+        const io = getIo();
+            io.emit("slotbookingupdate"); // sends to all connected clients
 
     if (!members || !pid) {
         return res.status(400).json({ message: "Members and professor id are required" });

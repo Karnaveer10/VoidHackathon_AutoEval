@@ -31,7 +31,7 @@ const loginUser = async (req, res) => {
             sameSite: process.env.NODE_ENV === "production" ? "strict" : "lax",
             maxAge: 30 * 60 * 1000                             // 30 minutes
         });
-        
+
         res.status(200).json({ name: user.name });
 
     } catch (error) {
@@ -55,13 +55,13 @@ const getprof = async (req, res) => {
     try {
         const { pid } = req.user;
 
-        const prof = await guideModel.findOne({ pid: pid }).select('requests');
+        const prof = await guideModel.findOne({ pid: pid });
 
         if (!prof) {
             return res.status(404).json({ message: 'Professor not found' });
         }
 
-        res.status(200).json(prof.requests);
+        res.status(200).json(prof);
     } catch (err) {
         console.error(err);
         return res.status(401).json({ message: 'Invalid or expired token' });
@@ -88,14 +88,19 @@ const acceptReq = async (req, res) => {
         if (!teamToAccept) {
             return res.status(404).json({ message: "Team not found" });
         }
-
+        console.log("Team to accept", teamToAccept)
         const len = teamToAccept.members?.length || 0;
-        const initialSubmissions = [
-            { type: "Abstract", status: "pending", fileUrl: [], remarks: "", marks: 0 },
-            { type: "Review 1", status: "pending", fileUrl: [], remarks: "", marks: 0 },
-            { type: "Review 2", status: "pending", fileUrl: [], remarks: "", marks: 0 },
-            { type: "Final Submission", status: "pending", fileUrl: [], remarks: "", marks: 0 }
-        ];
+        const initialSubmissions = ["Abstract", "Review 1", "Review 2", "Final Submission"].map((type) => ({
+            type,
+            status: "pending",
+            files: [],
+            remarks: "",
+            marks: teamToAccept.members.map(member => ({
+                regNo: member.regNo,
+                name: member.name,
+                score: 0
+            }))
+        }));
 
         prof.acceptedTeams.push({
             ...teamToAccept.toObject(),
@@ -107,12 +112,13 @@ const acceptReq = async (req, res) => {
 
 
         teamToAccept.members.forEach(member => {
-            io.to(member.regNo).emit("requestedUpdate", {
+            io.to(member.regNo).emit("loadingupdate", {
                 name: prof.name,
                 members: teamToAccept.members,
                 status: "accepted"
             });
         });
+        io.emit("slotbookingupdate"); // sends to all connected clients
 
         await prof.save();
 
@@ -152,6 +158,8 @@ const removeReq = async (req, res) => {
                 status: "rejected"
             });
         });
+        io.emit("slotbookingupdate"); // sends to all connected clients
+
         res.json({ message: "Team rejected successfully" });
     } catch (err) {
         console.error("Error rejecting team:", err);
@@ -169,7 +177,8 @@ const acceptedTeams = async (req, res) => {
         }
         res.status(200).json({
             name: prof.name,
-            acceptedTeams: prof.acceptedTeams
+            acceptedTeams: prof.acceptedTeams,
+            pid: pid
         });
     }
     catch (err) {
@@ -179,32 +188,36 @@ const acceptedTeams = async (req, res) => {
 };
 const acceptSubmission = async (req, res) => {
     try {
-        console.log(req.body)
+        const io = getIo();
         const { marks, remarks, label } = req.body;
         const { pid } = req.user;
 
-        // Find the guide and update the submission
-        const guideDoc = await guideModel.findOneAndUpdate(
-            {
-                pid: pid,
-                "acceptedTeams.submissions.type": label // find the submission with this label
-            },
-            {
-                $set: {
-                    "acceptedTeams.$[].submissions.$[sub].marks": marks,
-                    "acceptedTeams.$[].submissions.$[sub].remarks": remarks,
-                    "acceptedTeams.$[].submissions.$[sub].status": "accepted",
-                }
-            },
-            {
-                arrayFilters: [{ "sub.type": label }], // filter to match the correct submission
-                new: true // return the updated document
-            }
-        );
+        const guideDoc = await guideModel.findOne({ pid });
+        if (!guideDoc) return res.status(404).json({ message: "Guide not found" });
 
-        if (!guideDoc) {
-            return res.status(404).json({ message: "Guide or submission not found" });
-        }
+        // Loop over accepted teams
+        guideDoc.acceptedTeams.forEach(team => {
+            // Find the submission with matching label
+            const submission = team.submissions.find(sub => sub.type === label);
+            if (!submission) return;
+
+            // Update marks
+            submission.marks = submission.marks.map(m => {
+                const newScore = marks.find(x => x.regNo === m.regNo)?.score;
+                return newScore !== undefined ? { ...m, score: Number(newScore) } : m;
+            });
+
+            // Update remarks & status
+            submission.remarks = remarks || submission.remarks;
+            submission.status = "accepted";
+        });
+
+        await guideDoc.save();
+
+        // Emit to students
+        guideDoc.acceptedTeams.forEach(team => {
+            team.members.forEach(member => io.to(member.regNo).emit("submissionupdate"));
+        });
 
         res.status(200).json({ message: "Submission accepted successfully", guideDoc });
     } catch (error) {
@@ -214,37 +227,45 @@ const acceptSubmission = async (req, res) => {
 };
 const reSubmit = async (req, res) => {
     try {
-        const { pid } = req.user
-        const { marks, remarks, label } = req.body
-        const guideDoc = await guideModel.findOneAndUpdate(
-            {
-                pid: pid,
-                "acceptedTeams.submissions.type": label // find the submission with this label
-            },
-            {
-                $set: {
-                    "acceptedTeams.$[].submissions.$[sub].marks": marks,
-                    "acceptedTeams.$[].submissions.$[sub].remarks": remarks,
-                    "acceptedTeams.$[].submissions.$[sub].status": "resubmit",
-                    "acceptedTeams.$[].submissions.$[sub].files": [],
-                }
-            },
-            {
-                arrayFilters: [{ "sub.type": label }], // filter to match the correct submission
-                new: true // return the updated document
-            }
-        );
+        const { pid } = req.user;
+        const io = getIo();
+        const { marks, remarks, label } = req.body;
 
-        if (!guideDoc) {
-            return res.status(404).json({ message: "Guide or submission not found" });
-        }
+        // 1️⃣ Find the guide
+        const guideDoc = await guideModel.findOne({ pid });
+        if (!guideDoc) return res.status(404).json({ message: "Guide not found" });
 
-        res.status(200).json({ message: "Submission accepted successfully", guideDoc });
+        // 2️⃣ Loop over accepted teams
+        guideDoc.acceptedTeams.forEach(team => {
+            const submission = team.submissions.find(sub => sub.type === label);
+            if (!submission) return;
 
+            // 3️⃣ Merge marks while keeping student names
+            submission.marks = submission.marks.map(m => {
+                const newScore = marks.find(x => x.regNo === m.regNo)?.score;
+                return newScore !== undefined ? { ...m, score: Number(newScore) } : m;
+            });
+
+            // 4️⃣ Reset files, set status, update remarks
+            submission.files = [];
+            submission.status = "resubmit";
+            submission.remarks = remarks || submission.remarks;
+        });
+
+        // 5️⃣ Save the doc
+        await guideDoc.save();
+
+        // 6️⃣ Emit to all team members
+        guideDoc.acceptedTeams.forEach(team => {
+            team.members.forEach(member => io.to(member.regNo).emit("submissionupdate"));
+        });
+
+        res.status(200).json({ message: "Submission sent for resubmission successfully", guideDoc });
+
+    } catch (error) {
+        console.error("Error in reSubmit:", error);
+        res.status(500).json({ message: "Internal server error" });
     }
-    catch (error) {
-        console.log(error);
-        res.status(500).json({ message: "Internal server error" })
-    }
-}
+};
+
 module.exports = { loginUser, getinfo, getprof, acceptReq, removeReq, acceptedTeams, acceptSubmission, reSubmit };   

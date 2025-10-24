@@ -6,116 +6,117 @@ const validator = require('validator')
 const { getIo } = require("../utils/Socket.js");
 
 const createToken = (regno) => {
-    return jwt.sign({ regno }, process.env.JWT_TOKEN_SECRET, { expiresIn: "30m" })
+  return jwt.sign({ regno }, process.env.JWT_TOKEN_SECRET, { expiresIn: "30m" })
 }
-const setIo = (socketIo) => {
-    io = socketIo;
-};
+
 
 const loginUser = async (req, res) => {
   const { regno, password } = req.body;
 
-    try {
-        const user = await userModel.findOne({ regno });
+  try {
+    const user = await userModel.findOne({ regno });
 
-        if (!user)
-            return res.status(400).json({ message: "Invalid Registration number or Password" });
+    if (!user)
+      return res.status(400).json({ message: "Invalid Registration number or Password" });
 
-        const isMatch = await bcrypt.compare(password, user.password);
-        if (!isMatch)
-            return res.status(400).json({ message: "Invalid Registration number or Password" });
+    const isMatch = await bcrypt.compare(password, user.password);
+    if (!isMatch)
+      return res.status(400).json({ message: "Invalid Registration number or Password" });
 
-        const token = createToken(user.regno);
+    const token = createToken(user.regno);
 
-        // Set JWT as HttpOnly cookie for students as well
-        res.cookie("token", token, {
-        httpOnly: true,
-        secure: process.env.NODE_ENV === "production",
-        sameSite: process.env.NODE_ENV === "production" ? "strict" : "lax",
-        maxAge: 30 * 60 * 1000 // 30 minutes
-        });
+    // Set JWT as HttpOnly cookie for students as well
+    res.cookie("token", token, {
+      httpOnly: true,
+      secure: process.env.NODE_ENV === "production",
+      sameSite: process.env.NODE_ENV === "production" ? "strict" : "lax",
+      maxAge: 30 * 60 * 1000 // 30 minutes
+    });
 
-        let guideDoc = await guide.findOne({
-            "acceptedTeams.members.regNo": regno
-        });
+    let guideDoc = await guide.findOne({
+      "acceptedTeams.members.regNo": regno
+    });
 
-      if (guideDoc) {
-        return res.status(200).json({
-          status: "accepted",
-          guide: guideDoc.name   // professor name
-        });
-      }
-
-      guideDoc = await guide.findOne({
-          "requests.members.regNo": regno
-      });
-      console.log("requested", guideDoc)
-
-      if (guideDoc) {
-        return res.status(200).json({
-          status: "requested",
-          guide: guideDoc.name   // professor name
-        });
-      }
-      console.log("requested", guideDoc)
-
-      // ✅ If not found anywhere
+    if (guideDoc) {
       return res.status(200).json({
-        status: "notregistered"
+        status: "accepted",
+        guide: guideDoc.name   // professor name
       });
-
-    } catch (error) {
-        console.error(error);
-        res.status(500).json({ message: "Internal Server Error" });
     }
+
+    guideDoc = await guide.findOne({
+      "requests.members.regNo": regno
+    });
+    console.log("requested", guideDoc)
+
+    if (guideDoc) {
+      return res.status(200).json({
+        status: "requested",
+        guide: guideDoc.name   // professor name
+      });
+    }
+    console.log("requested", guideDoc)
+
+    // ✅ If not found anywhere
+    return res.status(200).json({
+      status: "notregistered"
+    });
+
+  } catch (error) {
+    console.error(error);
+    res.status(500).json({ message: "Internal Server Error" });
+  }
 };
 
 const getInfo = async (req, res) => {
-    try {
-        const { regno } = req.user;
+  try {
+    const { regno } = req.user;
 
-        const student = await userModel.findOne({ regno: regno }).select('-password -role -_id -email');
+    const student = await userModel.findOne({ regno: regno }).select('-password -role -_id -email');
 
-        if (!student) {
-            return res.status(404).json({ message: 'Student not found' });
-        }
-
-        res.status(200).json(student);
-    } catch (err) {
-        console.error(err);
-        return res.status(401).json({ message: 'Invalid or expired token' });
+    if (!student) {
+      return res.status(404).json({ message: 'Student not found' });
     }
+
+    res.status(200).json(student);
+  } catch (err) {
+    console.error(err);
+    return res.status(401).json({ message: 'Invalid or expired token' });
+  }
 };
 
 const getRegData = async (req, res) => {
-    try {
-        const { regno } = req.user;
+  try {
+    const { regno } = req.user;
 
-        const guideDoc = await guide.findOne({ "acceptedTeams.members.regNo": regno }).lean();
+    const guideDoc = await guide.findOne({ "acceptedTeams.members.regNo": regno }).lean();
 
-        if (!guideDoc || !guideDoc.acceptedTeams || guideDoc.acceptedTeams.length === 0) {
-            return res.status(404).json({ message: "Accepted team not found" });
-        }
-
-        const team = guideDoc.acceptedTeams[0]; // Only one accepted team
-
-        const guideData = {
-            name: guideDoc.name,
-            submissions: team.submissions || [],
-            members: team.members || []
-        };
-        res.status(200).json(guideData);
-
-    } catch (err) {
-        console.error(err);
-        res.status(500).json({ message: "Server error" });
+    if (!guideDoc || !guideDoc.acceptedTeams || guideDoc.acceptedTeams.length === 0) {
+      return res.status(404).json({ message: "Accepted team not found" });
     }
-};
 
+    const team = guideDoc.acceptedTeams.find(team =>
+      team.members.some(member => member.regNo === regno)
+    ); // Only one accepted team
+
+    const guideData = {
+      regno: regno,
+      name: guideDoc.name,
+      submissions: team.submissions || [],
+      members: team.members || []
+    };
+    res.status(200).json(guideData);
+
+  } catch (err) {
+    console.error(err);
+    res.status(500).json({ message: "Server error" });
+  }
+};
 const getRequestedData = async (req, res) => {
   try {
-    const { regno } = req.user; // student regno
-    const io = getIo()
+    const { regno } = req.user; // student regno from JWT (cookie verified)
+    const io = getIo();
+
     // --- Check if student is still in requests ---
     let guideDoc = await guide.findOne({
       "requests.members.regNo": regno
@@ -130,7 +131,8 @@ const getRequestedData = async (req, res) => {
         const guideData = {
           name: guideDoc.name,
           members: requestTeam.members || [],
-          status: "requested"
+          status: "requested",
+          regno, // ✅ send logged-in student's regno too
         };
 
         io.to(regno).emit("requestedUpdate", guideData);
@@ -152,7 +154,8 @@ const getRequestedData = async (req, res) => {
         const guideData = {
           name: guideDoc.name,
           members: acceptedTeam.members || [],
-          status: "accepted"
+          status: "accepted",
+          regno, // ✅ also include here
         };
 
         io.to(regno).emit("requestedUpdate", guideData);
@@ -168,6 +171,7 @@ const getRequestedData = async (req, res) => {
     res.status(500).json({ message: "Server error" });
   }
 };
+
 
 
 

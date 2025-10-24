@@ -5,8 +5,8 @@ const {loginUser,getinfo,getprof,acceptReq,removeReq,acceptedTeams,acceptSubmiss
 
 userRouter.post('/login',loginUser)
 userRouter.get('/allprof',getinfo)
-
 userRouter.use(auth);
+
 
 userRouter.get('/findprof',getprof)
 userRouter.put('/acceptRequest',acceptReq)
