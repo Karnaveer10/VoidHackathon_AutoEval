@@ -90,6 +90,11 @@ const acceptReq = async (req, res) => {
         }
 
         const len = teamToAccept.members?.length || 0;
+
+        if(prof.noOfSeats < len) {
+            return res.status(400).json({ message: "Not enough seats available" });
+        }
+
         const initialSubmissions = [
             { type: "Abstract", status: "pending", fileUrl: [], remarks: "", marks: 0 },
             { type: "Review 1", status: "pending", fileUrl: [], remarks: "", marks: 0 },
@@ -103,6 +108,7 @@ const acceptReq = async (req, res) => {
         });
 
         prof.requests = prof.requests.filter((team) => team._id.toString() !== id);
+        
         prof.noOfSeats = prof.noOfSeats - len;
 
 
@@ -187,7 +193,7 @@ const acceptSubmission = async (req, res) => {
         const guideDoc = await guideModel.findOneAndUpdate(
             {
                 pid: pid,
-                "acceptedTeams.submissions.type": label // find the submission with this label
+                "acceptedTeams.submissions.type": label 
             },
             {
                 $set: {

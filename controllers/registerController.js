@@ -1,5 +1,5 @@
 const userModel = require('../models/guideModel')
-
+   
 const register = async(req,res) =>{
     const { members, pid } = req.body;
 
