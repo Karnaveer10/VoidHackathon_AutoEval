@@ -173,10 +173,19 @@ const getRequestedData = async (req, res) => {
 };
 
 
+const getName = async (req, res) => {
+  try {
+    const { regno } = req.body;
+    const student = await userModel.findOne({ regno: regno });
+
+    if (!student) return res.status(404).json({ message: "Student not found" });
+    res.json({ name: student.name });
+  } catch (err) {
+    console.error("Error fetching name:", err);
+    res.status(500).json({ message: "Server error" });
+  }
+};
 
 
 
-
-
-
-module.exports = { loginUser, getInfo, getRegData, getRequestedData };
+module.exports = { loginUser, getInfo, getRegData, getRequestedData, getName };

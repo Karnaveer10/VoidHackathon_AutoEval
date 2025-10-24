@@ -19,5 +19,12 @@
         "email": "barath.t2024@vitstudent.ac.in",
         "password": "$2b$10$ddZqSQd9zaKsXBI/cWgpRe.JOoaCPHHqsEriD9sKkT3wGMagrGcUO",
         "role": "student"
+    },
+    {
+        "name":"Dummy Student",
+        "regno": "24BDS0001",
+        "email": "dummy.student2024@vitstudent.ac.in",
+        "password": "$2b$10$ddZqSQd9zaKsXBI/cWgpRe.JOoaCPHHqsEriD9sKkT3wGMagrGcUO",
+        "role": "student"
     }
 ]

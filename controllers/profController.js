@@ -90,6 +90,12 @@ const acceptReq = async (req, res) => {
         }
         console.log("Team to accept", teamToAccept)
         const len = teamToAccept.members?.length || 0;
+
+        if(prof.noOfSeats < len) {
+            return res.status(400).json({ message: "Not enough seats available" });
+        }
+
+        
         const initialSubmissions = ["Abstract", "Review 1", "Review 2", "Final Submission"].map((type) => ({
             type,
             status: "pending",
@@ -108,6 +114,7 @@ const acceptReq = async (req, res) => {
         });
 
         prof.requests = prof.requests.filter((team) => team._id.toString() !== id);
+        
         prof.noOfSeats = prof.noOfSeats - len;
 
 
