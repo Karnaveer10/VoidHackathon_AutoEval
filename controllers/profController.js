@@ -5,7 +5,7 @@ const bcrypt = require('bcryptjs')
 const validator = require('validator')
 const { get } = require('../Routes/profRouter')
 const { getIo } = require("../utils/Socket.js");
-
+const panelModel = require("../models/panelModel")
 const createToken = (pid) => {
     return jwt.sign({ pid }, process.env.JWT_TOKEN_SECRET, { expiresIn: "1h" });
 };
@@ -91,11 +91,11 @@ const acceptReq = async (req, res) => {
         console.log("Team to accept", teamToAccept)
         const len = teamToAccept.members?.length || 0;
 
-        if(prof.noOfSeats < len) {
+        if (prof.noOfSeats < len) {
             return res.status(400).json({ message: "Not enough seats available" });
         }
 
-        
+
         const initialSubmissions = ["Abstract", "Review 1", "Review 2", "Final Submission"].map((type) => ({
             type,
             status: "pending",
@@ -114,7 +114,7 @@ const acceptReq = async (req, res) => {
         });
 
         prof.requests = prof.requests.filter((team) => team._id.toString() !== id);
-        
+
         prof.noOfSeats = prof.noOfSeats - len;
 
 
@@ -274,5 +274,166 @@ const reSubmit = async (req, res) => {
         res.status(500).json({ message: "Internal server error" });
     }
 };
+const getPanel = async (req, res) => {
+    try {
+        const { pid } = req.user;
+        const panel = await panelModel.findOne({ pid }); // <--- add await
 
-module.exports = { loginUser, getinfo, getprof, acceptReq, removeReq, acceptedTeams, acceptSubmission, reSubmit };   
+        if (!panel) {
+            return res.status(404).json({ message: "Panel not found" });
+        }
+        const guideData = await Promise.all(
+            panel.guides.map(g => guideModel.findOne({ pid: g }))
+        );
+
+        res.status(200).json({ guides: guideData })
+    } catch (error) {
+        console.error(error);
+        res.status(500).json({ message: "Internal server error", error });
+    }
+};
+const getTeamID = async (req, res) => {
+    try {
+        const { id } = req.body; // get id from frontend
+        console.log(id)
+        if (!id) {
+            return res.status(400).json({ message: "id is required" });
+        }
+
+        // Find the guide whose acceptedTeams contains this id
+        const guide = await guideModel.findOne({
+            "acceptedTeams._id": id
+        });
+
+        if (!guide) {
+            return res.status(404).json({ message: "Team not found" });
+        }
+
+        // Find the exact team from acceptedTeams
+        const team = guide.acceptedTeams.find(t => t._id.toString() === id);
+
+        res.status(200).json({ guideId: guide._id, guideName: guide.name, team });
+    } catch (error) {
+        console.error("Error fetching team:", error);
+        res.status(500).json({ message: "Internal server error", error });
+    }
+};
+
+
+const panelMarks = async (req, res) => {
+    try {
+        console.log("Request body:", req.body);
+        const panelMarksData = req.body.panelMarks; // { "Review 1": { marks: {...} } }
+
+        console.log("Received panel marks:", panelMarksData);
+
+        const reviewType = Object.keys(panelMarksData)[0];
+        const marks = panelMarksData[reviewType].marks;
+
+        console.log("Review Type:", reviewType);
+        console.log("Marks Object:", marks);
+
+        if (!marks) {
+            console.log("Marks is undefined or null!");
+            return res.status(400).json({ message: "Marks not provided in body" });
+        }
+
+        const { pid } = req.user;
+        console.log("PID from user:", pid);
+
+        const panelDoc = await panelModel.findOne({ pid });
+        console.log("Panel doc found:", panelDoc ? true : false);
+
+        if (!panelDoc) return res.status(404).json({ message: "Panel not found" });
+
+        // Take the first regNo from the body
+        const firstRegNo = Object.keys(marks)[0];
+        console.log("First regNo from body:", firstRegNo);
+
+        // Find the team object which contains this member in members
+        const teamObj = panelDoc.marks.find(team =>
+            team.teams.some(review =>
+                review.members.some(member => member.regNo === firstRegNo)
+            )
+        );
+
+        console.log("Team object found:", teamObj ? true : false);
+
+        if (!teamObj) {
+            console.log("No team contains this member");
+            return res.status(404).json({ message: "Member not found in any team" });
+        }
+
+        // Find the review object with the given type
+        const reviewObj = teamObj.teams.find(r => r.type === reviewType);
+        console.log("Review object found:", reviewObj ? true : false);
+
+        if (!reviewObj) {
+            console.log("No review of this type found in the team");
+            return res.status(404).json({ message: "Review type not found" });
+        }
+
+        // Update scores for all members in this review
+        reviewObj.members.forEach(member => {
+            if (marks[member.regNo] !== undefined) {
+                member.score = Number(marks[member.regNo]);
+            }
+        });
+
+        await panelDoc.save();
+        console.log("Updated scores successfully!");
+        res.status(200).json({ message: "Scores updated successfully", updatedReview: reviewObj });
+
+    } catch (error) {
+        console.error("Error:", error);
+        res.status(500).json({ message: "Internal server error", error });
+    }
+};
+const getPanelMarks = async (req, res) => {
+  try {
+    const { matchedTeam } = req.body;
+    if (!matchedTeam || !matchedTeam.members || matchedTeam.members.length === 0) {
+      return res.status(400).json({ message: "Invalid matchedTeam data" });
+    }
+
+    // Step 1: Get the first member’s regNo
+    const firstRegNo = matchedTeam.members[0].regNo;
+    console.log("First member regNo:", firstRegNo);
+
+    // Step 2: Get the logged-in panel PID
+    const { pid } = req.user;
+    console.log("Panel PID:", pid);
+
+    // Step 3: Find the panel document
+    const panelDoc = await panelModel.findOne({ pid });
+    if (!panelDoc) return res.status(404).json({ message: "Panel not found" });
+
+    // Step 4: Find the object that contains this regNo
+    const teamObj = panelDoc.marks.find(team =>
+      team.teams.some(review =>
+        review.members.some(member => member.regNo === firstRegNo)
+      )
+    );
+    if (!teamObj)
+      return res.status(404).json({ message: "No matching team found in panel" });
+
+    // Step 5: Extract reviews
+    const reviewsData = teamObj.teams.map(r => ({
+      type: r.type,
+      marks: r.members.map(m => ({
+        regNo: m.regNo,
+        name: m.name,
+        score: m.score,
+      })),
+    }));
+
+    // Step 6: Send response
+    res.status(200).json({ reviews: reviewsData });
+  } catch (err) {
+    console.error("Error in getPanelMarks:", err);
+    res.status(500).json({ message: "Internal server error", error: err.message });
+  }
+};
+
+
+module.exports = { loginUser, getinfo, getprof, acceptReq, removeReq, acceptedTeams, acceptSubmission, reSubmit, getPanel, getTeamID, panelMarks,getPanelMarks };   

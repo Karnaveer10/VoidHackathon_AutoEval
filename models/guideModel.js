@@ -41,7 +41,9 @@ const guideSchema = new mongoose.Schema({
           files: [
             {
               fileUrl: { type: String, required: true },
-              fileName: { type: String, required: true }
+              fileName: { type: String, required: true },
+              uploadedAt: { type: Date, default: Date.now } // automatically sets current timestamp
+
             }
           ],
           status: { type: String, enum: ["pending", "accepted", "resubmit", "submitted"], default: "pending" },
@@ -49,7 +51,7 @@ const guideSchema = new mongoose.Schema({
           marks: [
             {
               regNo: { type: String, required: true },
-              name : {type: String , required:true},
+              name: { type: String, required: true },
               score: { type: Number, default: 0 }
             }
           ]

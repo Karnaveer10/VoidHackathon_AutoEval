@@ -22,9 +22,9 @@ const uploadFiles = async (req, res) => {
 
             uploadedFiles.push({
                 fileUrl: uploaded.secure_url,
-                fileName: file.originalname
+                fileName: file.originalname,
+                uploadedAt: new Date() // stores the current date and time
             });
-
             if (fs.existsSync(normalizedPath)) fs.unlinkSync(normalizedPath);
         }
 

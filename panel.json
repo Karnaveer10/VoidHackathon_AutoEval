@@ -1,0 +1,58 @@
+[
+  {
+    "name": "Valarmathi Sudhakar",
+    "pid": "001",
+    "email": "valarmathisudhakar@vitprof.ac.in",
+    "password": "$2b$10$niDNNbZ0M9UhLvyLcrUjYec6JWmYutCHKRCroarTl.Jg6efMeOdVC",
+    "guides": [],
+    "teams": []
+  },
+  {
+    "name": "Ravi Kumar",
+    "pid": "002",
+    "email": "ravikumar@vitprof.ac.in",
+    "password": "$2b$10$niDNNbZ0M9UhLvyLcrUjYec6JWmYutCHKRCroarTl.Jg6efMeOdVC",
+    "guides": [],
+    "teams": []
+  },
+  {
+    "name": "Anita Deshmukh",
+    "pid": "003",
+    "email": "anitadeshmukh@vitprof.ac.in",
+    "password": "$2b$10$niDNNbZ0M9UhLvyLcrUjYec6JWmYutCHKRCroarTl.Jg6efMeOdVC",
+    "guides": [],
+    "teams": []
+  },
+  {
+    "name": "Suresh Nair",
+    "pid": "004",
+    "email": "sureshnair@vitprof.ac.in",
+    "password": "$2b$10$niDNNbZ0M9UhLvyLcrUjYec6JWmYutCHKRCroarTl.Jg6efMeOdVC",
+    "guides": [],
+    "teams": []
+  },
+  {
+    "name": "Meena Iyer",
+    "pid": "005",
+    "email": "meenaiyer@vitprof.ac.in",
+    "password": "$2b$10$niDNNbZ0M9UhLvyLcrUjYec6JWmYutCHKRCroarTl.Jg6efMeOdVC",
+    "guides": [],
+    "teams": []
+  },
+  {
+    "name": "Arvind Sharma",
+    "pid": "006",
+    "email": "arvindsharma@vitprof.ac.in",
+    "password": "$2b$10$niDNNbZ0M9UhLvyLcrUjYec6JWmYutCHKRCroarTl.Jg6efMeOdVC",
+    "guides": [],
+    "teams": []
+  },
+  {
+    "name": "Priya Menon",
+    "pid": "007",
+    "email": "priyamenon@vitprof.ac.in",
+    "password": "$2b$10$niDNNbZ0M9UhLvyLcrUjYec6JWmYutCHKRCroarTl.Jg6efMeOdVC",
+    "guides": [],
+    "teams": []
+  }
+]

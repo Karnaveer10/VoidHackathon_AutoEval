@@ -1,18 +1,38 @@
 const mongoose = require('mongoose');
 
 const panelSchema = new mongoose.Schema({
-  panelId: { type: String, required: true, unique: true },
   name: { type: String, required: true },
+  pid: { type: String, required: true },
+  email: { type: String, required: true },
+  password: { type: String, required: true },
 
-  // Reference to Guide model
-  guides: [
+  guides: {
+    type: [String],
+    default: []
+  },
+
+  // Each team has a reviews array
+  marks: [
     {
-      type: mongoose.Schema.Types.ObjectId,
-      ref: 'Guide'
+      teams: [
+        {
+          type: {
+            type: String,
+            enum: ["Review 1", "Review 2", "Final Submission"],
+            required: true
+          },
+          scheduledAt: { type: Date, default: Date.now },
+          members: [
+            {
+              name: { type: String, required: true },
+              regNo: { type: String, required: true },
+              score: { type: Number, default: 0 }
+            }
+          ]
+        }
+      ]
     }
-  ],
-
-  createdAt: { type: Date, default: Date.now }
+  ]
 });
 
 module.exports = mongoose.models.Panel || mongoose.model('Panel', panelSchema);
