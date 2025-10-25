@@ -1,24 +1,31 @@
+// server.js
 const express = require('express');
-const cors = require('cors')
-require('dotenv').config()
-const app = express();
-app.use(express.json())
+const cors = require('cors');
+require('dotenv').config();
+const cookieParser = require('cookie-parser');
+const mongoose = require('mongoose');
+const http = require('http');
+const { initSocket } = require("./utils/Socket.js");
 
-// Allow frontend origin and enable credentials so cookies (HttpOnly) are sent
+// Models
+const guide = require('./models/guideModel');
+const profs = require('./models/profModel');
+const Panel = require('./models/panelModel');
+
+// Utils
+const { checkSubmissions } = require('./utils/slaAgent');
+
+// Connect to DB
+const connectDB = require('./config/dbConn');
+connectDB();
+
+const app = express();
+app.use(express.json());
+
+// Allow frontend origin and enable credentials for cookies
 const FRONTEND_ORIGIN = process.env.FRONTEND_ORIGIN || 'http://localhost:5173';
 app.use(cors({ origin: FRONTEND_ORIGIN, credentials: true }));
-const cookieParser = require('cookie-parser');
 app.use(cookieParser());
-const mongoose = require('mongoose')
-const connectDB = require('./config/dbConn')
-const guide = require('./models/guideModel')
-const port = process.env.PORT;
-const profs = require('./models/profModel')
-const Panel = require('./models/panelModel')
-const http = require('http');
-// const { Server } = require('socket.io');
-const {initSocket} = require ("./utils/Socket.js")
-connectDB();
 
 // Routes
 app.use('/api/student', require('./Routes/studentRouter'));
@@ -30,37 +37,29 @@ app.use('/api/logout', require('./Routes/logoutRouter'));
 
 // Create server & socket.io
 const server = http.createServer(app);
-
 const io = initSocket(server);
 
-// Export io for controllers
+// Panel update route
 app.post("/panel_update", async (req, res) => {
   try {
     const { guideName, panel1, panel2 } = req.body;
-        console.log("REQ BODY:", req.body);
+    console.log("REQ BODY:", req.body);
 
-    // 1. Find the guide by name
     const g = await guide.findOne({ name: guideName });
-    if (!g) {
-      return res.status(404).json({ message: "Guide not found" });
-    }
+    if (!g) return res.status(404).json({ message: "Guide not found" });
 
-    // Helper function to add guide to a panel
     const addGuideToPanel = async (panelName) => {
-      if (!panelName) return null; // skip if no panelName provided
+      if (!panelName) return null;
 
       let p = await Panel.findOne({ name: panelName });
-
       if (p) {
-        // Panel exists → add guide if not already added
         if (!p.guides.includes(g._id)) {
           p.guides.push(g._id);
           await p.save();
         }
       } else {
-        // Panel doesn’t exist → create new
         p = new Panel({
-          panelId: new mongoose.Types.ObjectId().toString(), // unique id
+          panelId: new mongoose.Types.ObjectId().toString(),
           name: panelName,
           guides: [g._id],
         });
@@ -70,13 +69,12 @@ app.post("/panel_update", async (req, res) => {
       return p;
     };
 
-    // 2. Handle both panels
     const p1 = await addGuideToPanel(panel1);
     const p2 = await addGuideToPanel(panel2);
 
     return res.status(200).json({
       message: "Guide successfully added to panels",
-      panels: [p1, p2].filter(Boolean), // remove nulls
+      panels: [p1, p2].filter(Boolean),
     });
 
   } catch (error) {
@@ -85,14 +83,11 @@ app.post("/panel_update", async (req, res) => {
   }
 });
 
+// Admin: Get team info
 app.get("/admin_get_teaminfo", async (req, res) => {
-
   try {
     const guides = await guide.find({});
-
-    // Flatten into desired structure
     const result = [];
-
     guides.forEach(g => {
       g.acceptedTeams.forEach(team => {
         result.push({
@@ -104,23 +99,34 @@ app.get("/admin_get_teaminfo", async (req, res) => {
         });
       });
     });
-
     res.json(result);
   } catch (err) {
     console.error(err);
     res.status(500).json({ error: 'Server error' });
   }
 });
+
+// Admin: Get professor data
 app.get('/admin_get_profdata', async (req, res) => {
   try {
     const p = await profs.find();
-    console.log(p)
+    console.log(p);
     res.json(p);
   } catch (err) {
     console.error(err);
     res.status(500).json({ error: 'Server error' });
   }
-})
+});
 
+const port = process.env.PORT || 5000;
 server.listen(port, () => console.log(`Server running on http://localhost:${port}`));
-module.exports = {io};
+
+// SLA Automation using node-cron
+const cron = require('node-cron');
+cron.schedule("*/30 * * * * *", async () => { // for testing, runs every 30 secs, we can change it acc to our use
+  console.log("⏰ Running automated SLA check...");
+  await checkSubmissions();
+});
+
+// Export io for controllers
+module.exports = { io };
