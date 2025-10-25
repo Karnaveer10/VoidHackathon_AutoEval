@@ -7,6 +7,7 @@ const guideSchema = new mongoose.Schema({
     unique: true
   },
   name: { type: String, required: true }, // Professor name (optional)
+  email: { type: String, required: true },  
   cabinNo: { type: String, required: true, default: '' },
   noOfSeats: { type: Number, required: true, default: 3 },
 
