@@ -1,11 +1,18 @@
-from fastapi import FastAPI, HTTPException
+from fastapi import FastAPI, HTTPException,Form
 from pydantic import BaseModel
 from typing import List, Optional
 from database import DatabaseManager  # Your existing class!
+from fastapi.middleware.cors import CORSMiddleware
 
 app = FastAPI(title="Answer Evaluator API", version="1.0.0")
 db = DatabaseManager()
-
+app.add_middleware(
+    CORSMiddleware,
+    allow_origins=["*"],  # or ["http://localhost:5173"] if using Vite
+    allow_credentials=True,
+    allow_methods=["*"],
+    allow_headers=["*"],
+)
 @app.on_event("startup")
 def startup():
     try:
@@ -168,7 +175,64 @@ def get_system_status():
         "flagged_reviews": len(safe_fetch("evaluated_answers", "needs_review = TRUE"))
     }
     return stats
+class LoginRequest(BaseModel):
+    username: str
+    password: str
+    type: str
 
+@app.post("/api/login")
+@app.post("/api/login")
+def login_user(request: LoginRequest):
+    name = request.username.strip()
+    password = request.password.strip()
+    user_type = request.type.strip().lower()
+
+    table = "teachers" if user_type == "teacher" else "students"
+    
+    print("\n🟢 Login attempt:")
+    print(f"   → Name received: '{name}'")
+    print(f"   → Password received: '{password}'")
+    print(f"   → User type: '{user_type}'")
+    print(f"   → Table: {table}")
+
+    try:
+        # Fetch all users, then match manually (bypassing SQLite LOWER issue)
+        all_users = safe_fetch(table)
+        print(f"   → Total users fetched: {len(all_users)}")
+
+        user = None
+        for u in all_users:
+            db_name = str(u[1]).strip().lower()
+            if db_name == name.lower():
+                user = u
+                break
+
+        if not user:
+            print("❌ No user found with that name.")
+            raise HTTPException(status_code=404, detail="User not found")
+
+        stored_password = user[3]  # adjust index if needed
+        print(f"   → Stored password in DB: {stored_password}")
+
+        if stored_password != password:
+            print("❌ Invalid credentials: Password mismatch.")
+            raise HTTPException(status_code=401, detail="Invalid credentials")
+
+        print("✅ Login successful!")
+        return {
+            "message": "Login successful",
+            "user": {
+                "id": user[0],
+                "name": user[1],
+                "email": user[2],
+                "created_at": user[4]
+            },
+            "type": user_type
+        }
+
+    except Exception as e:
+        print(f"❌ Login error: {e}")
+        raise HTTPException(status_code=500, detail=f"Server error: {e}")
 if __name__ == "__main__":
     import uvicorn
     uvicorn.run(app, host="0.0.0.0", port=8000)

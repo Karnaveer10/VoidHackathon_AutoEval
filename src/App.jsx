@@ -1,5 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { Upload, FileText, BarChart3, TrendingUp, AlertCircle, CheckCircle, Clock, BookOpen, User, LogOut, ChevronRight, Download, Eye } from 'lucide-react';
+import axios from "axios";
 
 const initialData = {
   teachers: [
@@ -36,17 +37,34 @@ const App = () => {
   const [uploadedFiles, setUploadedFiles] = useState({ answerKey: null, questionPaper: null, scripts: [] });
   const [studentView, setStudentView] = useState('exams');
 
-  const handleLogin = () => {
-    const users = loginForm.type === 'teacher' ? data.teachers : data.students;
-    const user = users.find(u => u.username === loginForm.username && u.password === loginForm.password);
-    
-    if (user) {
-      setCurrentUser(user);
-      setUserType(loginForm.type);
+const handleLogin = () => {
+  const { username, password, type } = loginForm;
+
+  if (type === "teacher") {
+    const teacher = data.teachers.find(
+      (t) => t.username === username && t.password === password
+    );
+    if (teacher) {
+      setCurrentUser(teacher);
+      setUserType("teacher");
+      console.log("✅ Teacher login successful:", teacher);
     } else {
-      alert('Invalid credentials');
+      alert("Invalid teacher credentials!");
     }
-  };
+  } else if (type === "student") {
+    const student = data.students.find(
+      (s) => s.username === username && s.password === password
+    );
+    if (student) {
+      setCurrentUser(student);
+      setUserType("student");
+      console.log("✅ Student login successful:", student);
+    } else {
+      alert("Invalid student credentials!");
+    }
+  }
+};
+
 
   const handleLogout = () => {
     setCurrentUser(null);
@@ -67,8 +85,8 @@ const App = () => {
 
   const processUploads = () => {
     alert('Processing uploads...\n\n1. Parse answer key and question paper\n2. Extract student info from scripts\n3. Perform OCR and image processing\n4. Compare answers using semantic similarity\n5. Calculate marks and generate statistics');
-    
-    const updatedExams = data.exams.map(exam => 
+
+    const updatedExams = data.exams.map(exam =>
       exam.id === selectedExam.id ? { ...exam, status: 'completed', avgScore: 78.2, stdDev: 11.5 } : exam
     );
     setData({ ...data, exams: updatedExams });
@@ -86,27 +104,25 @@ const App = () => {
             <h1 className="text-3xl font-bold text-gray-800">Exam Management System</h1>
             <p className="text-gray-600 mt-2">Login to continue</p>
           </div>
-          
+
           <div className="space-y-4">
             <div className="flex gap-2 bg-gray-100 p-1 rounded-lg">
               <button
                 onClick={() => setLoginForm({ ...loginForm, type: 'teacher' })}
-                className={`flex-1 py-2 rounded-md transition-all ${
-                  loginForm.type === 'teacher' ? 'bg-white shadow text-indigo-600' : 'text-gray-600'
-                }`}
+                className={`flex-1 py-2 rounded-md transition-all ${loginForm.type === 'teacher' ? 'bg-white shadow text-indigo-600' : 'text-gray-600'
+                  }`}
               >
                 Teacher
               </button>
               <button
                 onClick={() => setLoginForm({ ...loginForm, type: 'student' })}
-                className={`flex-1 py-2 rounded-md transition-all ${
-                  loginForm.type === 'student' ? 'bg-white shadow text-indigo-600' : 'text-gray-600'
-                }`}
+                className={`flex-1 py-2 rounded-md transition-all ${loginForm.type === 'student' ? 'bg-white shadow text-indigo-600' : 'text-gray-600'
+                  }`}
               >
                 Student
               </button>
             </div>
-            
+
             <input
               type="text"
               placeholder="Username"
@@ -114,7 +130,7 @@ const App = () => {
               onChange={(e) => setLoginForm({ ...loginForm, username: e.target.value })}
               className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-indigo-500"
             />
-            
+
             <input
               type="password"
               placeholder="Password"
@@ -122,14 +138,14 @@ const App = () => {
               onChange={(e) => setLoginForm({ ...loginForm, password: e.target.value })}
               className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-indigo-500"
             />
-            
+
             <button
               onClick={handleLogin}
               className="w-full bg-indigo-600 text-white py-3 rounded-lg hover:bg-indigo-700 transition-colors font-semibold"
             >
               Login
             </button>
-            
+
             <div className="text-sm text-gray-600 text-center mt-4">
               <p>Demo credentials:</p>
               <p>Teacher: teacher1 / pass123</p>
@@ -143,7 +159,7 @@ const App = () => {
 
   if (userType === 'teacher') {
     const teacherClasses = data.classes.filter(c => c.teacher === currentUser.id);
-    
+
     return (
       <div className="min-h-screen bg-gray-50">
         <div className="bg-white shadow-sm border-b">
@@ -227,11 +243,10 @@ const App = () => {
                     </div>
                     <p className="text-sm text-gray-600">{exam.subject}</p>
                     <div className="mt-3 flex items-center gap-2">
-                      <span className={`px-2 py-1 rounded text-xs font-medium ${
-                        exam.status === 'completed' ? 'bg-green-100 text-green-700' :
-                        exam.status === 'pending' ? 'bg-yellow-100 text-yellow-700' :
-                        'bg-blue-100 text-blue-700'
-                      }`}>
+                      <span className={`px-2 py-1 rounded text-xs font-medium ${exam.status === 'completed' ? 'bg-green-100 text-green-700' :
+                          exam.status === 'pending' ? 'bg-yellow-100 text-yellow-700' :
+                            'bg-blue-100 text-blue-700'
+                        }`}>
                         {exam.status.replace('_', ' ').toUpperCase()}
                       </span>
                     </div>
@@ -250,7 +265,7 @@ const App = () => {
                       <BarChart3 className="w-6 h-6 text-indigo-600" />
                       Exam Statistics - {selectedExam.type}
                     </h2>
-                    
+
                     <div className="grid grid-cols-1 md:grid-cols-2 gap-6 mb-6">
                       <div className="bg-gradient-to-br from-blue-50 to-blue-100 p-4 rounded-lg">
                         <p className="text-sm text-gray-600 mb-1">Class Average</p>
@@ -275,7 +290,7 @@ const App = () => {
                             <strong>AI Suggestion:</strong> This question involves complex problem-solving. Consider providing more practice problems and step-by-step examples.
                           </p>
                         </div>
-                        
+
                         <div className="bg-yellow-50 border-l-4 border-yellow-500 p-4 rounded">
                           <p className="font-medium text-yellow-800">Question 2: Moderate Performance</p>
                           <p className="text-sm text-yellow-700 mt-1">45% of students scored below average</p>
@@ -283,7 +298,7 @@ const App = () => {
                             <strong>AI Suggestion:</strong> Students may need clarification on terminology. Consider creating a glossary.
                           </p>
                         </div>
-                        
+
                         <div className="bg-green-50 border-l-4 border-green-500 p-4 rounded">
                           <p className="font-medium text-green-800">Questions 1, 3, 5: Strong Performance</p>
                           <p className="text-sm text-green-700 mt-1">Students demonstrated good understanding</p>
@@ -338,7 +353,7 @@ const App = () => {
               ) : (
                 <div className="bg-white p-6 rounded-xl shadow-sm">
                   <h2 className="text-xl font-semibold mb-6">Upload Exam Materials - {selectedExam.type}</h2>
-                  
+
                   <div className="space-y-6">
                     <div className={`border-2 rounded-lg p-6 ${uploadedFiles.answerKey ? 'border-green-500 bg-green-50' : 'border-gray-300'}`}>
                       <div className="flex items-center justify-between mb-3">
@@ -472,7 +487,7 @@ const App = () => {
             {studentResults.map((result, idx) => {
               const exam = data.exams.find(e => e.id === result.examId);
               const percentage = ((result.total / result.maxMarks) * 100).toFixed(1);
-              
+
               return (
                 <div key={idx} className="bg-white p-6 rounded-xl shadow-sm">
                   <div className="flex items-center justify-between mb-4">
