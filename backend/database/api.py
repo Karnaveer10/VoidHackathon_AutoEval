@@ -181,7 +181,6 @@ class LoginRequest(BaseModel):
     type: str
 
 @app.post("/api/login")
-@app.post("/api/login")
 def login_user(request: LoginRequest):
     name = request.username.strip()
     password = request.password.strip()
