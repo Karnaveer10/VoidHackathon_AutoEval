@@ -4,7 +4,7 @@ const jwt = require('jsonwebtoken')
 const bcrypt = require('bcryptjs')
 const validator = require('validator')
 const { getIo } = require("../utils/Socket.js");
-
+const message = require("../models/messageModel.js")
 const createToken = (regno) => {
   return jwt.sign({ regno }, process.env.JWT_TOKEN_SECRET, { expiresIn: "30m" })
 }

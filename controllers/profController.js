@@ -6,6 +6,7 @@ const validator = require('validator')
 const { get } = require('../Routes/profRouter')
 const { getIo } = require("../utils/Socket.js");
 const panelModel = require("../models/panelModel")
+const Message = require("../models/messageModel")
 const createToken = (pid) => {
     return jwt.sign({ pid }, process.env.JWT_TOKEN_SECRET, { expiresIn: "1h" });
 };
@@ -390,50 +391,135 @@ const panelMarks = async (req, res) => {
     }
 };
 const getPanelMarks = async (req, res) => {
-  try {
-    const { matchedTeam } = req.body;
-    if (!matchedTeam || !matchedTeam.members || matchedTeam.members.length === 0) {
-      return res.status(400).json({ message: "Invalid matchedTeam data" });
+    try {
+        const { matchedTeam } = req.body;
+        if (!matchedTeam || !matchedTeam.members || matchedTeam.members.length === 0) {
+            return res.status(400).json({ message: "Invalid matchedTeam data" });
+        }
+        console.log("Recieved data",matchedTeam)
+        // Step 1: Get the first member’s regNo
+        const firstRegNo = matchedTeam.members[0].regNo;
+        console.log("First member regNo:", firstRegNo);
+
+        // Step 2: Get the logged-in panel PID
+        const { pid } = req.user;
+        console.log("Panel PID:", pid);
+
+        // Step 3: Find the panel document
+        const panelDoc = await panelModel.findOne({ pid });
+        if (!panelDoc) return res.status(404).json({ message: "Panel not found" });
+
+        // Step 4: Find the object that contains this regNo
+        const teamObj = panelDoc.marks.find(team =>
+            team.teams.some(review =>
+                review.members.some(member => member.regNo === firstRegNo)
+            )
+        );
+        if (!teamObj)
+            return res.status(404).json({ message: "No matching team found in panel" });
+
+        // Step 5: Extract reviews
+        const reviewsData = teamObj.teams.map(r => ({
+            type: r.type,
+            marks: r.members.map(m => ({
+                regNo: m.regNo,
+                name: m.name,
+                score: m.score,
+            })),
+          
+        }));
+
+        // Step 6: Send response
+        res.status(200).json({profname:panelDoc.name, reviews: reviewsData });
+    } catch (err) {
+        console.error("Error in getPanelMarks:", err);
+        res.status(500).json({ message: "Internal server error", error: err.message });
     }
+};
+const sendMessage = async (req, res) => {
+    try {
+        const {fromName, members, message } = req.body;
+        const {pid} = req.user
+        console.log(pid,fromName,members,message)
+        const regNos = members.map(m => m.regNo).sort();
+        const m = await Message.findOne({
+            from: pid,
+            to: regNos
+        });
+         const io = getIo();
+        console.log(fromName)
+        if (m) {
+            m.messages.push({
+                text: message,
+                timestamp: Date.now()
+            });
 
-    // Step 1: Get the first member’s regNo
-    const firstRegNo = matchedTeam.members[0].regNo;
-    console.log("First member regNo:", firstRegNo);
+            await m.save();
+        } else {
+            await Message.create({
+                from: pid,
+                fromName:fromName,
+                to: regNos,
+                messages: [
+                    {
+                        text: message,
+                        timestamp: Date.now()
+                    }
+                ]
+            });
+        }
+          members.forEach(member => {
+            io.to(member.regNo).emit("newMessage", {
+                fromName: fromName,
+                message: message,
+                timestamp: Date.now()
+            });
+        });
 
-    // Step 2: Get the logged-in panel PID
-    const { pid } = req.user;
-    console.log("Panel PID:", pid);
+        return res.status(201).json({ success: true, msg: "Message sent!" });
 
-    // Step 3: Find the panel document
-    const panelDoc = await panelModel.findOne({ pid });
-    if (!panelDoc) return res.status(404).json({ message: "Panel not found" });
+    } catch (err) {
+        console.error(err);
+        return res.status(500).json({ success: false, msg: "Server error" });
+    }
+};
 
-    // Step 4: Find the object that contains this regNo
-    const teamObj = panelDoc.marks.find(team =>
-      team.teams.some(review =>
-        review.members.some(member => member.regNo === firstRegNo)
-      )
-    );
-    if (!teamObj)
-      return res.status(404).json({ message: "No matching team found in panel" });
+const getMessages = async (req, res) => {
+    try {
+        const { members } = req.body;
 
-    // Step 5: Extract reviews
-    const reviewsData = teamObj.teams.map(r => ({
-      type: r.type,
-      marks: r.members.map(m => ({
-        regNo: m.regNo,
-        name: m.name,
-        score: m.score,
-      })),
-    }));
+        // Extract regNos only
+        const regNos = members.map(m => m.regNo).sort();
 
-    // Step 6: Send response
-    res.status(200).json({ reviews: reviewsData });
-  } catch (err) {
-    console.error("Error in getPanelMarks:", err);
-    res.status(500).json({ message: "Internal server error", error: err.message });
-  }
+        // Find ALL messages matching this membership
+        const chats = await Message.find({ to: regNos });
+
+        if (chats.length > 0) {
+            return res.status(200).json({
+                success: true,
+                chats: chats.map(chat => ({
+                    fromName: chat.fromName,
+                    messages: chat.messages
+                }))
+            });
+        }
+
+        return res.status(200).json({
+            success: true,
+            chats: []
+        });
+
+    } catch (err) {
+        console.error("Error fetching messages:", err);
+        return res.status(500).json({
+            success: false,
+            chats: [],
+            error: "Server Error"
+        });
+    }
 };
 
 
-module.exports = { loginUser, getinfo, getprof, acceptReq, removeReq, acceptedTeams, acceptSubmission, reSubmit, getPanel, getTeamID, panelMarks,getPanelMarks };   
+
+
+module.exports = { loginUser, getinfo, getprof, acceptReq, removeReq, acceptedTeams, acceptSubmission, reSubmit, getPanel, getTeamID, panelMarks, getPanelMarks,sendMessage, getMessages };   

@@ -24,10 +24,10 @@ async function sendReminder(guideEmail, guideName, submissionType) {
   const mailOptions = {
     from: process.env.ADMIN_EMAIL,
     to: guideEmail,
-    subject: `⚠️ SLA Reminder: ${submissionType} pending for more than 48 hours`,
+    subject: `⚠️ Reminder: ${submissionType} pending for more than 48 hours`,
     text: `Hello ${guideName},
 
-This is an automated reminder that a ${submissionType} submission has been pending review for over 48 hours.
+This is an automated reminder that ${submissionType} submission has been pending review for over 48 hours.
 
 Please log in to the Capstone Portal and take the necessary action.
 

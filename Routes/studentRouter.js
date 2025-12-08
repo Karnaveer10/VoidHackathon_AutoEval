@@ -11,4 +11,5 @@ userRouter.get('/info',getInfo)
 userRouter.post('/getName', getName)
 userRouter.get('/RegData',getRegData)
 userRouter.get('/reqData',getRequestedData)
+
 module.exports = userRouter

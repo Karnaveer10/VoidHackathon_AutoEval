@@ -122,11 +122,11 @@ const port = process.env.PORT || 5000;
 server.listen(port, () => console.log(`Server running on http://localhost:${port}`));
 
 // SLA Automation using node-cron
-const cron = require('node-cron');
-cron.schedule("*/30 * * * * *", async () => { // for testing, runs every 30 secs, we can change it acc to our use
-  console.log("⏰ Running automated SLA check...");
-  await checkSubmissions();
-});
+// const cron = require('node-cron');
+// cron.schedule("*/30 * * * * *", async () => { // for testing, runs every 30 secs, we can change it acc to our use
+//   console.log("⏰ Running automated SLA check...");
+//   await checkSubmissions();
+// });
 
 // Export io for controllers
 module.exports = { io };
